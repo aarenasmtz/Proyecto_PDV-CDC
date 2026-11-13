@@ -8,6 +8,7 @@ import { ElementoCarrito, servicioVentas } from '../../services/servicioVentas';
 import { Cliente, Producto, Categoria } from '../../types/tiposCatalogo';
 import { resolveProductImageUrl } from '../../services/apiClient';
 import { ResumenVentas, Venta } from '../../types/tiposVentas';
+import { lookupPostalCode } from '../../services/servicioCodigoPostal';
 import SaleReceiptModal from '../Sales/SaleReceiptModal';
 import './PaginaPuntoVenta.css';
 
@@ -57,16 +58,25 @@ export const PaginaPuntoVenta: React.FC = () => {
   const [productDetailModal, setProductDetailModal] = useState<Producto | null>(null);
   const [receipt, setReceipt] = useState<Venta | null>(null);
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const customerDropdownRef = useRef<HTMLDivElement>(null);
+  const customerSearchInputRef = useRef<HTMLInputElement>(null);
   const [isNewCustomerModalOpen, setIsNewCustomerModalOpen] = useState(false);
   const [newCustomerForm, setNewCustomerForm] = useState({
     firstName: '',
     lastName: '',
     companyName: '',
+    taxId: '',
+    postalCode: '37000',
+    city: 'León',
+    state: 'Guanajuato',
     email: '',
     phone: '',
     customerType: 'Particular',
     dailyBoxLimit: '0'
   });
+  const [postalLocationHint, setPostalLocationHint] = useState('León, Guanajuato');
   const [savingNewCustomer, setSavingNewCustomer] = useState(false);
   const [requiresInvoice, setRequiresInvoice] = useState(false);
   const [hasOpenShift, setHasOpenShift] = useState(true);
@@ -128,9 +138,11 @@ export const PaginaPuntoVenta: React.FC = () => {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (showFullLoading = true) => {
     try {
-      setLoading(true);
+      if (showFullLoading) {
+        setLoading(true);
+      }
       setNotice(null);
       const now = new Date();
       const year = now.getFullYear();
@@ -139,8 +151,9 @@ export const PaginaPuntoVenta: React.FC = () => {
       const startDateIso = `${year}-${month}-${day}T00:00:00.000Z`;
       const endDateIso = `${year}-${month}-${day}T23:59:59.999Z`;
 
+      const targetCategoryId = selectedCategoryId === 'ALL' ? undefined : (selectedCategoryId || DEFAULT_CATEGORY_ID);
       const [catalog, customerDirectory, summary, currentShift, categoryList] = await Promise.all([
-        servicioCatalogo.getProducts(undefined, DEFAULT_CATEGORY_ID, { page: 1, pageSize: 500 }),
+        servicioCatalogo.getProducts(undefined, targetCategoryId, { page: 1, pageSize: 500 }),
         servicioCatalogo.getCustomers(undefined, undefined, undefined, { page: 1, pageSize: 500 }),
         servicioVentas.getSalesSummary(undefined, undefined, undefined, startDateIso, endDateIso),
         cashShiftService.getCurrentShift().catch(() => null),
@@ -160,8 +173,32 @@ export const PaginaPuntoVenta: React.FC = () => {
     } catch (error) {
       setNotice({ type: 'error', text: errorMessage(error, t('posLoadError')) });
     } finally {
-      setLoading(false);
+      if (showFullLoading) {
+        setLoading(false);
+      }
       requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  };
+
+  const refreshStockAndSummary = async () => {
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const startDateIso = `${year}-${month}-${day}T00:00:00.000Z`;
+      const endDateIso = `${year}-${month}-${day}T23:59:59.999Z`;
+
+      const targetCategoryId = selectedCategoryId === 'ALL' ? undefined : (selectedCategoryId || DEFAULT_CATEGORY_ID);
+      const [catalog, summary] = await Promise.all([
+        servicioCatalogo.getProducts(undefined, targetCategoryId, { page: 1, pageSize: 500 }),
+        servicioVentas.getSalesSummary(undefined, undefined, undefined, startDateIso, endDateIso)
+      ]);
+      const productItems = Array.isArray(catalog) ? catalog : catalog.items;
+      setProducts(productItems.filter(product => product.isActive));
+      setSalesSummary(summary);
+    } catch (err) {
+      console.warn('Error al actualizar existencias o resumen tras venta:', err);
     }
   };
 
@@ -170,22 +207,55 @@ export const PaginaPuntoVenta: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!productDetailModal && !isNewCustomerModalOpen && !isCalculatorModalOpen) return;
+    if (!productDetailModal && !isNewCustomerModalOpen && !isCalculatorModalOpen && !isCustomerDropdownOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setProductDetailModal(null);
         setIsNewCustomerModalOpen(false);
         setIsCalculatorModalOpen(false);
+        setIsCustomerDropdownOpen(false);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [productDetailModal, isNewCustomerModalOpen, isCalculatorModalOpen]);
+  }, [productDetailModal, isNewCustomerModalOpen, isCalculatorModalOpen, isCustomerDropdownOpen]);
+
+  useEffect(() => {
+    if (!isCustomerDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isCustomerDropdownOpen]);
+
+  useEffect(() => {
+    if (isCustomerDropdownOpen) {
+      setTimeout(() => customerSearchInputRef.current?.focus(), 60);
+    } else {
+      setCustomerSearchQuery('');
+    }
+  }, [isCustomerDropdownOpen]);
 
   useBarcodeScanner({ onScan: scannedCode => void findAndAddProduct(scannedCode) });
 
   const selectedCustomer = customers.find(customer => customer.id === selectedCustomerId);
   const isWholesaleCustomer = selectedCustomer?.customerType.toLocaleLowerCase() === 'mayorista';
+
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearchQuery.trim()) return customers;
+    const q = customerSearchQuery.toLowerCase().trim();
+    return customers.filter(c =>
+      c.displayName.toLowerCase().includes(q) ||
+      (c.companyName && c.companyName.toLowerCase().includes(q)) ||
+      (c.taxId && c.taxId.toLowerCase().includes(q)) ||
+      (c.phone && c.phone.includes(q)) ||
+      (c.email && c.email.toLowerCase().includes(q)) ||
+      (c.postalCode && c.postalCode.includes(q))
+    );
+  }, [customers, customerSearchQuery]);
 
   const calculateCartItemPricing = (
     product: Producto,
@@ -305,10 +375,9 @@ export const PaginaPuntoVenta: React.FC = () => {
   const appliedDiscount = Math.max(customerDiscountAmount, manualDiscountAmount);
   const effectiveDiscountPercent = subtotal > 0 ? Math.round((appliedDiscount / subtotal) * 1000) / 10 : 0;
 
-  // Base gravable: IVA (16%) aplica sobre el subtotal descontado
-  const taxableBase = Math.max(0, subtotal - appliedDiscount);
-  const taxAmount = requiresInvoice ? Math.round(taxableBase * 0.16 * 100) / 100 : 0;
-  const totalAmount = Math.max(0, taxableBase + taxAmount);
+  // IVA (16%) calculado sobre el subtotal base de la venta
+  const taxAmount = requiresInvoice ? Math.round(subtotal * 0.16 * 100) / 100 : 0;
+  const totalAmount = Math.max(0, subtotal - appliedDiscount + taxAmount);
   const coverage = cart.reduce((total, item) => total + item.quantity * getPieceCoverage(item.product), 0);
 
   // Búsqueda remota de productos para la calculadora de m²
@@ -474,24 +543,55 @@ export const PaginaPuntoVenta: React.FC = () => {
     searchInputRef.current?.focus();
   };
 
+  const handlePostalCodeChange = (rawCp: string) => {
+    const cp = rawCp.replace(/\D/g, '').slice(0, 5);
+    setNewCustomerForm(prev => ({ ...prev, postalCode: cp }));
+    if (cp.length === 5) {
+      void lookupPostalCode(cp).then(res => {
+        if (res) {
+          setNewCustomerForm(prev => ({ ...prev, city: res.city, state: res.state }));
+          setPostalLocationHint(`${res.city}, ${res.state}`);
+        } else {
+          setPostalLocationHint('');
+        }
+      });
+    } else {
+      setPostalLocationHint('');
+    }
+  };
+
   const handleSaveNewCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerForm.firstName.trim() || !newCustomerForm.lastName.trim() || !newCustomerForm.email.trim() || !newCustomerForm.phone.trim()) {
       setNotice({ type: 'error', text: 'Por favor complete todos los campos obligatorios del cliente.' });
       return;
     }
+
+    const rfcClean = newCustomerForm.taxId.trim().toUpperCase();
+    if (rfcClean && !/^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/.test(rfcClean)) {
+      setNotice({ type: 'error', text: 'El RFC debe contener 12 o 13 caracteres con formato mexicano válido (ej. XAXX010101000).' });
+      return;
+    }
+
+    const cpClean = newCustomerForm.postalCode.trim().replace(/\D/g, '');
+    if (cpClean && cpClean.length !== 5) {
+      setNotice({ type: 'error', text: 'El código postal debe contener exactamente 5 dígitos numéricos (ej. 37000).' });
+      return;
+    }
+
     try {
       setSavingNewCustomer(true);
       const created = await servicioCatalogo.createCustomer({
         firstName: newCustomerForm.firstName.trim(),
         lastName: newCustomerForm.lastName.trim(),
         companyName: newCustomerForm.companyName.trim() || undefined,
+        taxId: rfcClean || undefined,
         email: newCustomerForm.email.trim(),
         phone: newCustomerForm.phone.trim().replace(/\D/g, ''),
         address: 'N/A',
-        city: 'León',
-        state: 'Guanajuato',
-        postalCode: '37000',
+        city: newCustomerForm.city.trim() || 'León',
+        state: newCustomerForm.state.trim() || 'Guanajuato',
+        postalCode: cpClean || '37000',
         customerType: newCustomerForm.customerType,
         specialDiscountPercentage: 0,
         dailyBoxLimit: Number(newCustomerForm.dailyBoxLimit || 0),
@@ -501,8 +601,21 @@ export const PaginaPuntoVenta: React.FC = () => {
       setCustomers(Array.isArray(updatedCustomers) ? updatedCustomers : updatedCustomers.items);
       setSelectedCustomerId(created.id);
       setIsNewCustomerModalOpen(false);
-      setNewCustomerForm({ firstName: '', lastName: '', companyName: '', email: '', phone: '', customerType: 'Particular', dailyBoxLimit: '0' });
-      setNotice({ type: 'success', text: `Cliente ${created.displayName} dado de alta con éxito.` });
+      setNewCustomerForm({
+        firstName: '',
+        lastName: '',
+        companyName: '',
+        taxId: '',
+        postalCode: '37000',
+        city: 'León',
+        state: 'Guanajuato',
+        email: '',
+        phone: '',
+        customerType: 'Particular',
+        dailyBoxLimit: '0'
+      });
+      setPostalLocationHint('León, Guanajuato');
+      setNotice({ type: 'success', text: `Cliente ${created.displayName} dado de alta con éxito.${created.taxId ? ` RFC: ${created.taxId}` : ''}` });
     } catch (err) {
       setNotice({ type: 'error', text: errorMessage(err, 'Error al registrar cliente.') });
     } finally {
@@ -586,7 +699,8 @@ export const PaginaPuntoVenta: React.FC = () => {
       setManualDiscount('');
       setNotes('');
       setNotice({ type: 'success', key: 'saleCompleted', params: { idVenta: sale.idVenta }, text: t('saleCompleted', { idVenta: sale.idVenta }) });
-      await loadData();
+      // Refrescar existencias y métricas en segundo plano silenciosamente sin destruir el ticket ni desmontar la pantalla
+      void refreshStockAndSummary();
     } catch (error) {
       setNotice({ type: 'error', text: errorMessage(error, t('saleProcessError')) });
     } finally {
@@ -736,28 +850,335 @@ export const PaginaPuntoVenta: React.FC = () => {
             {cart.length > 0 && <button className="pos-link-btn" onClick={() => setCart([])}>{t('clearCart')}</button>}
           </div>
         </div>
-        <label className="pos-field">{t('selectCustomer')}
-          <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-            <select style={{ flex: 1 }} value={selectedCustomerId} onChange={event => setSelectedCustomerId(event.target.value)}>
-              <option value="">{t('generalPublic')}</option>
-              {customers.map(customer => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.displayName} ({customer.customerType}){customer.dailyBoxLimit > 0 ? ` [Límite: ${customer.dailyBoxLimit} cjas/día]` : ''}
-                </option>
-              ))}
-            </select>
+        <div className="pos-field pos-customer-field" style={{ position: 'relative' }} ref={customerDropdownRef}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--text-main, #334155)' }}>{t('selectCustomer')}</span>
+            {selectedCustomer && (
+              <button
+                type="button"
+                className="pos-link-btn"
+                style={{ fontSize: '0.76rem', color: 'var(--text-muted, #64748b)', padding: '2px 4px', cursor: 'pointer' }}
+                onClick={() => setSelectedCustomerId('')}
+              >
+                ✕ {t('generalPublic')}
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'stretch' }}>
+            {/* Custom Styled Dropdown Trigger */}
+            <div
+              className={`pos-customer-select-trigger ${isCustomerDropdownOpen ? 'is-active' : ''}`}
+              onClick={() => setIsCustomerDropdownOpen(prev => !prev)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setIsCustomerDropdownOpen(prev => !prev);
+                } else if (e.key === 'Escape') {
+                  setIsCustomerDropdownOpen(false);
+                }
+              }}
+              style={{
+                flex: 1,
+                minHeight: '44px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.5rem 0.75rem',
+                border: isCustomerDropdownOpen ? '1.5px solid var(--primary-main, #c59b27)' : '1px solid var(--border-input, #d1d5db)',
+                borderRadius: '8px',
+                background: 'var(--background-surface, #ffffff)',
+                cursor: 'pointer',
+                boxShadow: isCustomerDropdownOpen ? '0 0 0 3px rgba(197, 155, 39, 0.18)' : '0 1px 2px rgba(0,0,0,0.05)',
+                transition: 'all 0.15s ease',
+                userSelect: 'none',
+                minWidth: 0
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, overflow: 'hidden' }}>
+                <span style={{ fontSize: '1.15rem', flexShrink: 0 }}>
+                  {selectedCustomer ? '👤' : '👥'}
+                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, textAlign: 'left', lineHeight: 1.25 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-main, #1e293b)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {selectedCustomer ? selectedCustomer.displayName : t('generalPublic')}
+                    </span>
+                    {selectedCustomer && (
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontWeight: 600,
+                          flexShrink: 0,
+                          background: selectedCustomer.customerType === 'Mayorista' ? '#dcfce7' : selectedCustomer.customerType.includes('Arquitecto') ? '#f3e8ff' : '#f1f5f9',
+                          color: selectedCustomer.customerType === 'Mayorista' ? '#166534' : selectedCustomer.customerType.includes('Arquitecto') ? '#6b21a8' : '#475569'
+                        }}
+                      >
+                        {selectedCustomer.customerType}
+                      </span>
+                    )}
+                  </div>
+                  {selectedCustomer ? (
+                    <div style={{ display: 'flex', gap: '0.4rem', fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', marginTop: '2px', flexWrap: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {selectedCustomer.taxId ? (
+                        <span style={{ color: '#0284c7', fontWeight: 600, fontFamily: 'monospace' }}>RFC: {selectedCustomer.taxId}</span>
+                      ) : (
+                        <span style={{ color: '#d97706' }}>Sin RFC</span>
+                      )}
+                      <span>·</span>
+                      <span>CP: {selectedCustomer.postalCode || '37000'}</span>
+                      {selectedCustomer.phone && (
+                        <>
+                          <span>·</span>
+                          <span>📞 {selectedCustomer.phone}</span>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #64748b)', marginTop: '1px' }}>
+                      Venta general de mostrador (sin RFC individual)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, marginLeft: '0.5rem' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted, #94a3b8)', transform: isCustomerDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }}>
+                  ▼
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Add Client Button */}
             {canCreateCustomer && (
               <button
                 type="button"
                 className="action-btn"
                 onClick={() => setIsNewCustomerModalOpen(true)}
                 title="Dar de alta nuevo cliente"
+                style={{
+                  padding: '0 0.85rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  borderRadius: '8px',
+                  background: 'var(--primary-main, #c59b27)',
+                  color: '#ffffff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
               >
-                ➕ Cliente
+                <span>➕</span> Cliente
               </button>
             )}
           </div>
-        </label>
+
+          {/* CUSTOM FLOATING DROPDOWN MENU */}
+          {isCustomerDropdownOpen && (
+            <div
+              className="pos-customer-dropdown-menu"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                left: 0,
+                right: 0,
+                zIndex: 1100,
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                boxShadow: '0 14px 32px -4px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.08)',
+                overflow: 'hidden',
+                animation: 'posFadeInDown 0.15s ease'
+              }}
+            >
+              {/* Search Header */}
+              <div style={{ padding: '0.65rem 0.75rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>🔍</span>
+                <input
+                  ref={customerSearchInputRef}
+                  type="text"
+                  value={customerSearchQuery}
+                  onChange={e => setCustomerSearchQuery(e.target.value)}
+                  placeholder="Buscar por nombre, RFC, empresa o teléfono..."
+                  style={{
+                    width: '100%',
+                    border: 'none',
+                    outline: 'none',
+                    background: 'transparent',
+                    fontSize: '0.84rem',
+                    color: '#1e293b'
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Escape') {
+                      setIsCustomerDropdownOpen(false);
+                    }
+                  }}
+                />
+                {customerSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomerSearchQuery('')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.85rem', padding: '0 4px' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Scrollable list */}
+              <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                {/* Default Público General option */}
+                <div
+                  className={`pos-customer-option-item ${!selectedCustomerId ? 'is-selected' : ''}`}
+                  onClick={() => {
+                    setSelectedCustomerId('');
+                    setIsCustomerDropdownOpen(false);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.65rem 0.85rem',
+                    borderBottom: '1px solid #f1f5f9',
+                    cursor: 'pointer',
+                    background: !selectedCustomerId ? '#fefce8' : '#ffffff',
+                    borderLeft: !selectedCustomerId ? '4px solid var(--primary-main, #c59b27)' : '4px solid transparent',
+                    transition: 'all 0.12s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <span style={{ fontSize: '1.15rem' }}>👥</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>
+                        {t('generalPublic')}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        Venta mostrador sin RFC ni factura individual
+                      </div>
+                    </div>
+                  </div>
+                  {!selectedCustomerId && (
+                    <span style={{ color: 'var(--primary-main, #c59b27)', fontWeight: 'bold', fontSize: '1rem' }}>✓</span>
+                  )}
+                </div>
+
+                {/* Filtered Clients list */}
+                {filteredCustomers.map(customer => {
+                  const isSelected = customer.id === selectedCustomerId;
+                  return (
+                    <div
+                      key={customer.id}
+                      className={`pos-customer-option-item ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => {
+                        setSelectedCustomerId(customer.id);
+                        setIsCustomerDropdownOpen(false);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        padding: '0.65rem 0.85rem',
+                        borderBottom: '1px solid #f8fafc',
+                        cursor: 'pointer',
+                        background: isSelected ? '#fefce8' : '#ffffff',
+                        borderLeft: isSelected ? '4px solid var(--primary-main, #c59b27)' : '4px solid transparent',
+                        transition: 'all 0.12s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: 0, flex: 1, paddingRight: '0.5rem' }}>
+                        {/* Name & Type Badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>
+                            {customer.displayName}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.68rem',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontWeight: 600,
+                              background: customer.customerType === 'Mayorista' ? '#dcfce7' : customer.customerType.includes('Arquitecto') ? '#f3e8ff' : '#f1f5f9',
+                              color: customer.customerType === 'Mayorista' ? '#166534' : customer.customerType.includes('Arquitecto') ? '#6b21a8' : '#475569'
+                            }}
+                          >
+                            {customer.customerType}
+                          </span>
+                        </div>
+
+                        {/* Fiscal & Contact Chips */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.73rem', marginTop: '2px' }}>
+                          {customer.taxId ? (
+                            <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '4px', fontWeight: 600, fontFamily: 'monospace' }}>
+                              🏷️ RFC: {customer.taxId}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#d97706', fontSize: '0.7rem' }}>
+                              (Sin RFC)
+                            </span>
+                          )}
+
+                          <span style={{ background: '#f1f5f9', color: '#475569', padding: '1px 6px', borderRadius: '4px' }}>
+                            📍 CP: {customer.postalCode || '37000'}
+                          </span>
+
+                          {customer.phone && (
+                            <span style={{ color: '#64748b' }}>
+                              📞 {customer.phone}
+                            </span>
+                          )}
+
+                          {customer.dailyBoxLimit > 0 && (
+                            <span style={{ background: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600 }}>
+                              📦 Máx {customer.dailyBoxLimit} cjas/día
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {isSelected && (
+                        <span style={{ color: 'var(--primary-main, #c59b27)', fontWeight: 'bold', fontSize: '1rem', marginLeft: '0.4rem' }}>✓</span>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {filteredCustomers.length === 0 && customerSearchQuery && (
+                  <div style={{ padding: '1.25rem 1rem', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                    <p style={{ margin: '0 0 0.5rem 0' }}>No se encontraron clientes para <b>"{customerSearchQuery}"</b></p>
+                    {canCreateCustomer && (
+                      <button
+                        type="button"
+                        className="action-btn"
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', margin: '0 auto' }}
+                        onClick={() => {
+                          setIsCustomerDropdownOpen(false);
+                          setNewCustomerForm(prev => ({ ...prev, firstName: customerSearchQuery }));
+                          setIsNewCustomerModalOpen(true);
+                        }}
+                      >
+                        ➕ Dar de alta a "{customerSearchQuery}"
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer with summary */}
+              <div style={{ padding: '0.4rem 0.75rem', background: '#f8fafc', borderTop: '1px solid #f1f5f9', fontSize: '0.72rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{filteredCustomers.length} cliente{filteredCustomers.length === 1 ? '' : 's'}</span>
+                <span style={{ fontSize: '0.7rem' }}>Presiona Esc para cerrar</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="pos-cart-list">
           {cart.length === 0 ? <div className="pos-empty">{t('emptyCartHint')}</div> : cart.map(item => {
@@ -860,9 +1281,19 @@ export const PaginaPuntoVenta: React.FC = () => {
             </span>
           </div>
 
+          {requiresInvoice && (
+            <div style={{ fontSize: '0.74rem', padding: '0.35rem 0.6rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '6px', color: '#1e40af', margin: '0.2rem 0 0.4rem 0', lineHeight: 1.35 }}>
+              <b>Destino CFDI 4.0:</b> {selectedCustomer?.taxId ? `${selectedCustomer.taxId} (${selectedCustomer.displayName}) · CP: ${selectedCustomer.postalCode || '37000'}` : 'Público en General (RFC: XAXX010101000)'}
+            </div>
+          )}
+
           <span>{t('subtotal')}<b>{money.format(subtotal)}</b></span>
           {appliedDiscount > 0 && <span className="pos-discount">{t('discount')}<b>-{money.format(appliedDiscount)}</b></span>}
-          {requiresInvoice && <span>{t('tax')}<b>{money.format(taxAmount)}</b></span>}
+          {requiresInvoice && (
+            <span style={{ color: '#0284c7', fontWeight: 600 }}>
+              {t('tax')} (16% IVA)<b>+{money.format(taxAmount)}</b>
+            </span>
+          )}
           {coverage > 0 && <span>{t('coverage')}<b>{coverage.toFixed(2)} m² <small style={{ fontWeight: 400, color: 'var(--primary-main)' }}>(📦 ~{cart.reduce((sum, item) => sum + Math.ceil(item.quantity / ((item.product.piecesPerBox && item.product.piecesPerBox > 0) ? item.product.piecesPerBox : 1)), 0)} {t('boxesEstimated')})</small></b></span>}
           <span className="pos-total">{t('total')}<b>{money.format(totalAmount)}</b></span>
         </div>
@@ -941,38 +1372,108 @@ export const PaginaPuntoVenta: React.FC = () => {
 
     {isNewCustomerModalOpen && (
       <div className="pos-receipt-backdrop" onMouseDown={e => e.target === e.currentTarget && setIsNewCustomerModalOpen(false)}>
-        <div className="pos-customer-modal" style={{ width: 'min(500px, 100%)' }} role="dialog" aria-modal="true">
-          <h2>➕ Dar de alta nuevo cliente</h2>
-          <p>Complete los datos para registrar el cliente desde la caja.</p>
-          <form onSubmit={handleSaveNewCustomer} style={{ display: 'grid', gap: '0.75rem', marginTop: '1rem' }}>
-            <label className="pos-field">Nombre(s) *
-              <input required value={newCustomerForm.firstName} onChange={e => setNewCustomerForm(prev => ({ ...prev, firstName: e.target.value }))} placeholder="Ej. Juan" />
-            </label>
-            <label className="pos-field">Apellido(s) *
-              <input required value={newCustomerForm.lastName} onChange={e => setNewCustomerForm(prev => ({ ...prev, lastName: e.target.value }))} placeholder="Ej. Pérez" />
-            </label>
-            <label className="pos-field">Empresa / Negocio
-              <input value={newCustomerForm.companyName} onChange={e => setNewCustomerForm(prev => ({ ...prev, companyName: e.target.value }))} placeholder="Ej. Decoraciones Bajío" />
-            </label>
-            <label className="pos-field">Correo electrónico *
-              <input required type="email" value={newCustomerForm.email} onChange={e => setNewCustomerForm(prev => ({ ...prev, email: e.target.value }))} placeholder="cliente@correo.com" />
-            </label>
-            <label className="pos-field">Teléfono *
-              <input required type="tel" value={newCustomerForm.phone} onChange={e => setNewCustomerForm(prev => ({ ...prev, phone: e.target.value }))} placeholder="4771234567" />
-            </label>
-            <label className="pos-field">Tipo de cliente
-              <select value={newCustomerForm.customerType} onChange={e => setNewCustomerForm(prev => ({ ...prev, customerType: e.target.value }))}>
-                <option value="Particular">Particular</option>
-                <option value="Mayorista">Mayorista</option>
-                <option value="Arquitecto/Constructor">Arquitecto/Constructor</option>
-              </select>
-            </label>
+        <div
+          className="pos-customer-modal"
+          style={{
+            width: 'min(580px, 96vw)',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            borderRadius: '12px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+            padding: '1.5rem'
+          }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>➕ Dar de alta nuevo cliente</h2>
+            <button
+              type="button"
+              className="pos-receipt-close"
+              style={{ margin: 0, padding: '0.2rem 0.5rem', background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}
+              onClick={() => setIsNewCustomerModalOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <p style={{ color: 'var(--text-muted, #64748b)', fontSize: '0.85rem', margin: '0 0 1rem 0' }}>
+            Registre los datos fiscales y de contacto para asociar el cliente a la venta y habilitar emisión de CFDI 4.0.
+          </p>
+          <form onSubmit={handleSaveNewCustomer} style={{ display: 'grid', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              <label className="pos-field">Nombre(s) *
+                <input required value={newCustomerForm.firstName} onChange={e => setNewCustomerForm(prev => ({ ...prev, firstName: e.target.value }))} placeholder="Ej. Juan" />
+              </label>
+              <label className="pos-field">Apellido(s) *
+                <input required value={newCustomerForm.lastName} onChange={e => setNewCustomerForm(prev => ({ ...prev, lastName: e.target.value }))} placeholder="Ej. Pérez" />
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              <label className="pos-field">Empresa / Razón Social
+                <input value={newCustomerForm.companyName} onChange={e => setNewCustomerForm(prev => ({ ...prev, companyName: e.target.value }))} placeholder="Ej. Decoraciones Bajío" />
+              </label>
+              <label className="pos-field">
+                <span style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>RFC / Tax ID</span>
+                  <small style={{ color: '#0284c7', fontWeight: 600 }}>SAT CFDI 4.0</small>
+                </span>
+                <input
+                  maxLength={13}
+                  value={newCustomerForm.taxId}
+                  onChange={e => setNewCustomerForm(prev => ({ ...prev, taxId: e.target.value.toUpperCase() }))}
+                  placeholder="XAXX010101000 / AEMA960428ME6"
+                  style={{ textTransform: 'uppercase', fontFamily: 'monospace', letterSpacing: '0.04em' }}
+                />
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              <label className="pos-field">
+                <span style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Código Postal (CP) *</span>
+                  <small style={{ color: '#0284c7', fontWeight: 600 }}>Fiscal</small>
+                </span>
+                <input
+                  required
+                  inputMode="numeric"
+                  maxLength={5}
+                  value={newCustomerForm.postalCode}
+                  onChange={e => handlePostalCodeChange(e.target.value)}
+                  placeholder="37000"
+                  style={{ fontFamily: 'monospace' }}
+                />
+                {postalLocationHint && (
+                  <small style={{ color: 'var(--text-muted, #64748b)', fontSize: '0.75rem', marginTop: '2px' }}>
+                    📍 {postalLocationHint}
+                  </small>
+                )}
+              </label>
+              <label className="pos-field">Tipo de cliente
+                <select value={newCustomerForm.customerType} onChange={e => setNewCustomerForm(prev => ({ ...prev, customerType: e.target.value }))}>
+                  <option value="Particular">Particular</option>
+                  <option value="Mayorista">Mayorista</option>
+                  <option value="Arquitecto/Constructor">Arquitecto/Constructor</option>
+                </select>
+              </label>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              <label className="pos-field">Correo electrónico *
+                <input required type="email" value={newCustomerForm.email} onChange={e => setNewCustomerForm(prev => ({ ...prev, email: e.target.value }))} placeholder="cliente@correo.com" />
+              </label>
+              <label className="pos-field">Teléfono *
+                <input required type="tel" value={newCustomerForm.phone} onChange={e => setNewCustomerForm(prev => ({ ...prev, phone: e.target.value }))} placeholder="4771234567" />
+              </label>
+            </div>
+
             <label className="pos-field">Límite diario de cajas (0 = Sin límite)
               <input type="number" min="0" step="1" value={newCustomerForm.dailyBoxLimit} onChange={e => setNewCustomerForm(prev => ({ ...prev, dailyBoxLimit: e.target.value }))} placeholder="0" />
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
               <button type="button" className="pos-receipt-close" style={{ flex: 1 }} onClick={() => setIsNewCustomerModalOpen(false)}>Cancelar</button>
-              <button type="submit" className="action-btn" style={{ flex: 1 }} disabled={savingNewCustomer}>{savingNewCustomer ? 'Guardando...' : 'Guardar y Seleccionar'}</button>
+              <button type="submit" className="action-btn" style={{ flex: 1.5 }} disabled={savingNewCustomer}>{savingNewCustomer ? 'Guardando...' : '💾 Guardar y Seleccionar'}</button>
             </div>
           </form>
         </div>

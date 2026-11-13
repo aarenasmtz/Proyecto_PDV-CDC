@@ -1,6 +1,462 @@
 # CURRENT STATE — Estado Real del Sistema WPC Bajío
 
-## 🟢 ESTADO ACTUAL (07 de Octubre, 2026 - Corrección CORS para Cloudflare Workers en Producción)
+## 🟢 ESTADO ACTUAL (13 de Noviembre, 2026 - Levantamiento de Servicios y Auditoría Exhaustiva de Carga en los 17 Módulos del Sistema)
+
+- **Levantamiento y Verificación de Servicios Activos**:
+  - **Backend API (`Pos.Api`)**: Activo y escuchando en `http://localhost:5000` (Proceso .NET 9).
+  - **Frontend SPA (`pos-web`)**: Activo y escuchando en `http://localhost:5173` (Vite 6 / React 18 / Node.js).
+  - **Base de Datos Local (`PosLambrinDb`)**: Activa en `MSSQLSERVER` local.
+- **Auditoría Integral de Rendimiento y Carga de Datos en 42 Peticiones y 17 Módulos**:
+  - Se desarrolló y ejecutó una suite de validación automatizada sobre el proxy de Vite (`http://127.0.0.1:5173/api/v1/...`) con autenticación como Administrador, simulando exactamente las consultas que realizan los componentes React al montarse:
+    - **Total pruebas**: 42 | **Aprobadas**: 42 (100%) | **Fallidas**: 0.
+    - **Latencias de respuesta**: Entre **6 ms y 153 ms** en todos los módulos (óptimo).
+- **Diagnóstico Preciso de los Módulos que Parecen "No Cargar Información"**:
+  1. **Módulos con Filtro de Fecha Inicial en "Hoy" (`today()` / 13 de Noviembre)**:
+     - **Historial de Ventas (`SalesHistoryPage.tsx`)**: Inicia con `startDate: today()`, `endDate: today()`. Como las 19 ventas de prueba fueron generadas hasta el 09 de noviembre de 2026, al abrir el módulo muestra 0 registros ("No se encontraron ventas registradas"). Al limpiar las fechas o ampliarlas, aparecen de inmediato las **19 ventas** en **18 ms**.
+     - **Movimientos de Inventario (`InventoryMovementsPage.tsx`)**: Inicia con `startDate: today()`, `endDate: today()`. Al no haber movimientos hoy, muestra 0 registros. Al limpiar el filtro de fecha, aparecen instantáneamente los **56 movimientos** en **13 ms**.
+     - **Reportes y Métricas (`ReportsDashboardPage.tsx`)**: Inicializa con fecha del día en curso. Muestra $0.00 y 0 productos vendidos hoy porque hoy no ha habido transacciones. Al cambiar el rango de fechas al periodo de ventas (ej. del 01/11/2026 al 10/11/2026), se calculan y visualizan todos los indicadores, desgloses y gráficas.
+  2. **Módulos con Tablas Vacías en Base de Datos Local (`Count: 0`)**:
+     - **Recibos de Compra (`PurchaseReceiptsPage.tsx`)**: La tabla `PurchaseReceipts` tiene **0 registros** en la BD local. Por ello la tabla muestra legítimamente "No se encontraron recibos de compra registrados / Sin registros" (confirmado con la captura del usuario).
+     - **Cotizaciones (`QuoteListPage.tsx`)**: La tabla `Quotes` tiene **0 cotizaciones** en la BD local.
+     - **Devoluciones (`CommercialOpsPage.tsx?mode=returns`)**: La tabla `ReturnHeaders` tiene **0 devoluciones** registradas.
+  3. **Módulo con Filtro de Categoría por Defecto**:
+     - **Catálogo de Productos (`PaginaCatalogoProductos.tsx`)**: Inicia con `categoriaFiltro: DEFAULT_CATEGORY_ID` (*Lambrin Interior*), cargando 29 productos en **11 ms**. Al seleccionar "Todas las categorías", muestra los **111 productos** del catálogo completo.
+  4. **Módulos con Carga Inmediata y Completa de Datos**:
+     - **🛒 Punto de Venta (POS)**: Carga 29 productos de la categoría activa, 7 clientes, 13 categorías, resumen del día y estado de turno en ~30 ms.
+     - **📋 Notas de Venta**: Muestra las 19 ventas en 12 ms (con filtros limpios y estado ALL).
+     - **📦 Pedidos Web**: Muestra los 5 pedidos de Stripe en 12 ms.
+     - **💵 Turnos de Caja**: Muestra el turno actual abierto, 1 corte histórico y 21 movimientos de caja en ~30 ms.
+     - **🧾 Facturación CFDI 4.0**: Muestra las 2 facturas timbradas en 50 ms, configuración fiscal en 11 ms y bitácora en 11 ms.
+     - **👥 Directorio de Clientes**: Carga los 7 clientes registrados en 7 ms.
+     - **📁 Categorías**: Carga las 13 categorías en 18 ms.
+     - **🏭 Inventario / Existencias**: Carga el stock de los 111 productos en 61 ms.
+     - **🛡️ Gestión de Usuarios**: Carga usuarios, roles y 35 permisos en 10 ms.
+     - **💰 Crédito y Cobranza**: Carga 4 ventas pendientes de pago, 20 transacciones de pago, 1 abono y 2 plantillas de contrato.
+     - **🔍 Bitácora de Auditoría**: Carga 33 eventos de hoy en 20 ms (y 6,939 totales).
+- **Pruebas y Verificación Automatizada**:
+  - Backend: 122/122 pruebas unitarias e integración aprobadas al 100% (`dotnet test src/backend/Pos.sln`).
+  - Frontend: 53/53 pruebas unitarias de Vitest aprobadas (`npm run test`).
+  - Servidores activos: Backend API (`http://localhost:5000`) y Frontend SPA (`http://localhost:5173`).
+- **Estado Git**: Working tree local sin commits ni pushes conforme a directiva del proyecto.
+
+## 🟢 ESTADO PREVIO (09 de Noviembre, 2026 - Corrección de Retardo en Ticket de Venta, Desmontaje de Pantalla y Timeout de Conexión en Base de Datos)
+
+- **Corrección de Flujo Post-Venta y Rendimiento en Base de Datos (`PaginaPuntoVenta.tsx`, `apiClient.ts`, `appsettings.json`, `appsettings.Development.json`)**:
+  - **Problema Reportado**: Tras crear una venta, tardaba mucho tiempo en mostrar el ticket, la pantalla se quedaba cargando para volver a mostrar los productos y aparecía el error `"Tiempo de espera agotado al conectar con el servidor (15s). Verifica la conexión."`.
+  - **Diagnóstico y Causas Raíz Identificadas**:
+    1. **Bloqueo del Ticket por Desmontaje del DOM (`PaginaPuntoVenta.tsx`)**:
+       - Al completar la venta, se ejecutaba `setReceipt(sale)` e inmediatamente `await loadData()`.
+       - `loadData()` llamaba de inmediato a `setLoading(true)`.
+       - Al activarse `loading: true`, la condición temprana `if (loading) return <div className="pos-loading">...</div>` desmontaba todo el árbol de componentes del POS, **destruyendo el modal del ticket (`SaleReceiptModal`)** del DOM antes de que pudiera renderizarse. El cajero veía una pantalla en blanco con "Cargando..." en vez de su ticket.
+    2. **Sobrecarga de 5 Consultas Concurrentes Innecesarias tras una Venta**:
+       - `loadData()` disparaba concurrentemente: `getProducts` (500 ítems), `getCustomers` (500 ítems), `getCategories` (500 ítems), `getSalesSummary` y `getCurrentShift`.
+       - Ni los clientes, ni las categorías, ni el estado del turno cambian al registrar una venta; únicamente cambian las existencias de productos y el acumulado de ventas del día.
+    3. **Agotamiento de Conexiones en SQL Server y Timeout Agresivo del Cliente**:
+       - SQL Server local opera bajo protocolo Shared Memory con TCP deshabilitado. Al recibir 5 peticiones simultáneas justo después de la transacción de venta, el pool de conexiones de EF Core alcanzaba el tiempo límite en la fase post-login (`[Post-Login] complete=14016`).
+       - En `apiClient.ts`, `setTimeout(() => controller.abort(), 15000)` abortaba prematuramente a los 15s antes de que la transacción terminara de responder, mostrando el banner de error al usuario.
+  - **Soluciones Implementadas**:
+    1. **Apertura Inmediata del Ticket sin Bloqueo de UI (`PaginaPuntoVenta.tsx`)**:
+       - `setReceipt(sale)` abre el ticket de inmediato (<1 segundo) para que el cajero imprima o entregue el comprobante sin esperas.
+       - Implementado `refreshStockAndSummary()` que corre en segundo plano de forma silenciosa (sin activar `setLoading(true)`, sin desmontar la interfaz y sin retrasar el ticket).
+       - Se redujo el refresco post-venta de 5 peticiones pesadas a solo 2 ligeras (`getProducts` de la categoría actual para existencias + `getSalesSummary` para totales del día), completando en **~93 ms**.
+    2. **Optimización del Pool de Conexiones de SQL Server (`appsettings.json`, `appsettings.Development.json`)**:
+       - Cadena de conexión actualizada con `Connect Timeout=30;Max Pool Size=200;MultipleActiveResultSets=True;`, permitiendo que múltiples consultas asíncronas reutilicen conexiones activas sin agotar el pool ni bloquearse en post-login.
+    3. **Alineación de Timeout en `apiClient.ts`**:
+       - Aumentado el límite de cancelación de `15000` ms (15s) a `30000` ms (30s), alineado con el estándar de APIs transaccionales y evitando abortos en falso del navegador.
+  - **Pruebas y Verificación**:
+    - Prueba de venta en vivo: Creación de venta completada en **938 ms** (Folio generado `#27`), refresco de existencias en segundo plano en **93 ms**, visualización instantánea del ticket.
+    - Backend: 122/122 pruebas unitarias e integración aprobadas al 100% (`dotnet test src/backend/Pos.sln`).
+    - Frontend: 53/53 pruebas unitarias de Vitest aprobadas (`npm run test`).
+    - Build de producción Vite completado limpiamente en 15.46s con 0 advertencias y 0 errores.
+    - Servidores activos: Backend API (`http://localhost:5000`) y Frontend SPA (`http://localhost:5173`).
+  - **Estado Git**: Working tree local sin commits ni pushes conforme a directiva del proyecto.
+
+## 🟢 ESTADO PREVIO (09 de Noviembre, 2026 - Rediseño del Control de Cantidad y Carrito en Punto de Venta)
+
+- **Rediseño Visual y Ergonómico del Stepper (+ / −) en Carrito del PDV (`PaginaPuntoVenta.css`, `PaginaPuntoVenta.tsx`)**:
+  - **Problema Reportado**: En el panel lateral del carrito de ventas, el contenedor donde se modifican las piezas (`+` y `−`) "se perdía" visualmente debido a bordes débiles, falta de contraste, líneas rotas en el campo de texto y botones poco diferenciados.
+  - **Causa Raíz Identificada**:
+    - Conflicto por reglas duplicadas en `PaginaPuntoVenta.css`: existía una definición antigua en cuadrícula (`display: grid`) en la línea 944 que sobrescribía parcialmente los estilos de la línea 497.
+    - El `input` tenía `border-left: 0; border-right: 0;`, pero el contenedor conservaba un `gap`, lo que dejaba el número flotando con líneas superiores/inferiores desconectadas de los botones.
+    - Colores de borde y fondo muy claros (`--border-input` / `#E6D8C5`) sobre fondo blanco, provocando la pérdida de contraste ("se pierde").
+  - **Mejoras Implementadas**:
+    1. **Eliminación de Reglas CSS Duplicadas**: Retiradas por completo las reglas redundantes en `PaginaPuntoVenta.css`.
+    2. **Control de Cantidad Unificado en Cápsula Segmentada**:
+       - Contenedor con borde definido (`1.5px solid #CFB9A5`), esquinas redondeadas (`7px`), sombra sutil (`box-shadow: 0 1px 2px rgba(58, 35, 18, 0.08)`) y altura ergonómica de `30px`.
+       - Efecto focus-within que resalta el borde en color terracota corporativo (`#9C4D22`) con anillo suave al editar.
+    3. **Botones `−` y `+` Táctiles y de Alto Contraste**:
+       - Botones con superficie de fondo cálida (`#FAF5ED`), tipografía bold (`1.15rem`, `font-weight: 800`), separadores verticales nítidos (`1px solid #E4D5C5`).
+       - Microinteracción hover de alto contraste: fondo terracota (`#9C4D22`) con icono blanco puro (`#FFFFFF`).
+    4. **Input Numérico Central Integrado**:
+       - Tipografía en marrón oscuro de alto contraste (`#3A2312`, `font-weight: 750`, `0.9rem`), centrado perfecto sin bordes flotantes rotos, y supresión de selectores/flechas nativas del navegador (spin-buttons).
+    5. **Botón Quitar (`×`) Refinado**:
+       - Convertido en botón circular suave con transición a rojo (`#FEE2E2` / `#DC2626`) en hover.
+    6. **Jerarquía Visual de Totales por Partida**:
+       - Subtotal en negrita prominente (`#3A2312`, `0.92rem`, `font-weight: 800`) y desglose de piezas/m² en color secundario balanceado (`#7A6657`).
+  - **Pruebas y Verificación**:
+    - Frontend: `53/53` pruebas unitarias aprobadas. Build de producción Vite completado limpiamente con 0 advertencias y 0 errores.
+    - Servidores activos: Backend API (`http://localhost:5000`) y Frontend SPA (`http://localhost:5173`).
+  - **Estado Git**: Working tree local sin commits ni pushes conforme a directiva del proyecto.
+
+## 🟢 ESTADO PREVIO (09 de Noviembre, 2026 - Optimización de Rendimiento en Carga de Productos del PDV: de 4.56s a 26ms)
+
+- **Optimización Integral de Carga de Productos en el Punto de Venta (`PaginaPuntoVenta.tsx`, `CatalogApplicationService.cs`, `DbInitializer.cs`, `vite.config.ts`)**:
+  - **Problema Reportado**: La vista principal del PDV tardaba más de 4.5 segundos en cargar los productos (`http://localhost:5173/api/v1/products?categoryId=7938934b-d6cb-44fd-98de-b0645c66017d&page=1&pageNumber=1&pageSize=500`). En el desglose de Network de Chrome DevTools se observaba:
+    - `Stalled`: 2.27 s
+    - `Waiting for server response (TTFB)`: 2.27 s
+    - Duración total: 4.56 s
+  - **Diagnóstico y Causas Raíz Identificadas**:
+    1. **Imágenes Base64 Gigantescas en Base de Datos (LOBs en SQL Server)**:
+       - 99 de 112 productos tenían imágenes completas codificadas en cadenas Base64 (`data:image/jpeg;base64,...`) de entre 500 KB y 600 KB cada una almacenadas en la columna `ImagenUrl` de la tabla `Products`.
+       - Esto sumaba **31.2 MB** de datos binarios en la tabla y **8.28 MB** de payload JSON para los 29 productos de la categoría por defecto del PDV.
+       - La transferencia masiva de megabytes colapsaba el pipeline de serialización de EF Core y el proxy HTTP de Vite en Node.js.
+    2. **Consulta en Dos Fases con Extracción de IDs en Memoria y `OPENJSON`**:
+       - `CatalogApplicationService.GetProductsAsync` primero extraía los IDs a una lista C# y luego ejecutaba `_dbContext.Products.Where(p => pagedProductIds.Contains(p.Id)).Include(p => p.Categoria)` seguido de subconsultas separadas con `OPENJSON` para calcular el stock.
+       - En backend puro (`http://localhost:5000`), esta operación tomaba **2,924 ms**.
+    3. **Bloqueo de Socket IPv6 en Windows por `host: '0.0.0.0'` en Vite**:
+       - `vite.config.ts` tenía configurado `server.host: '0.0.0.0'`, lo que forzaba a Node.js a escuchar exclusivamente en IPv4 (`0.0.0.0:5173`) sin abrir el socket IPv6 `[::]:5173`.
+       - En Windows, al navegar o consultar `http://localhost:5173`, el resolver de DNS intenta primero conectarse a `::1:5173`. Al no haber nada escuchando en IPv6, el socket TCP se quedaba esperando el timeout de retransmisión SYN de Windows (~2,270 ms) antes de caer a IPv4 `127.0.0.1`. Esto explicaba con exactitud los **2.27 s de Stalled**.
+       - Además, el proxy de Vite apuntaba a `target: 'http://localhost:5000'`, sufriendo idéntico retardo de 2 segundos en el primer reenvío interno a Kestrel.
+  - **Soluciones Implementadas**:
+    1. **Migración Automática de Imágenes Base64 a WebP en Disco (`DbInitializer.cs`)**:
+       - Implementado `MigrateBase64ImagesToDiskAsync` en el arranque de la API: detecta automáticamente cualquier producto con `ImagenUrl` que empiece con `data:image%`.
+       - Decodifica la imagen y genera mediante `IProductImageStorageService` variantes optimizadas en formato WebP (thumbnail 128x128, POS 256x256, preview 512x512) guardadas en `C:\WPCBajioData\Products\{productId}\`.
+       - Actualiza la base de datos reemplazando la cadena Base64 por la URL relativa liviana `/products/{productId}/pos.webp?v=...`.
+       - Los 99 productos con Base64 fueron convertidos con éxito a WebP en disco. El tamaño de la respuesta JSON pasó de **8.5 MB** a solo **~15 KB** (reducción de 560x).
+    2. **Proyección Directa a DTO en una Sola Consulta SQL (`CatalogApplicationService.cs`)**:
+       - Refactorizado `GetProductsAsync` para utilizar proyección directa con `.Select(...)`: recupera las columnas escalares necesarias, el nombre de categoría vía navegación `p.Categoria.Nombre` y el cálculo de stock disponible en una única consulta SQL optimizada con `TOP 500`.
+       - El tiempo de respuesta directo del backend (.NET 9) bajó de **2,924 ms** a **35 ms** (~83x de mejora).
+    3. **Eliminación del Retardo IPv6 y Optimización del Proxy (`vite.config.ts`)**:
+       - Cambiado `server.host` a `'::'` (dual-stack IPv6 e IPv4), habilitando escucha simultánea en `[::]:5173` y `0.0.0.0:5173` sin perder el acceso por red local (`192.168.100.2`).
+       - Actualizados los targets del proxy (`/api`, `/products`, `/categories`) de `http://localhost:5000` a `http://127.0.0.1:5000` para comunicación directa IPv4 sin esperas de resolución DNS.
+       - Esto eliminó por completo los 2.27 segundos de espera de socket.
+  - **Métricas Finales Verificadas**:
+    - **Antes**: 4,560 ms (2.27s Stalled + 2.27s TTFB, payload 8.5 MB).
+    - **Después**: **26 ms** (0s Stalled + 26ms TTFB, payload 15 KB).
+    - **Aceleración total**: **~175x más rápido**, carga prácticamente instantánea en el Punto de Venta.
+  - **Pruebas y Verificación**:
+    - Backend: 122/122 pruebas unitarias e integración aprobadas al 100% (`dotnet test src/backend/Pos.sln`).
+    - Frontend: 53/53 pruebas unitarias de Vitest aprobadas (`npm run test`).
+    - Build de producción: `npm run build` completado en 13.64s con 0 errores TypeScript.
+    - Servidores activos: Backend API en `http://localhost:5000` y Frontend SPA en `http://localhost:5173`.
+  - **Estado Git**:
+    - Working tree local sin commits ni empujes remotos conforme a las directivas del proyecto.
+
+## 🟢 ESTADO PREVIO (09 de Noviembre, 2026 - Módulo de Facturación CFDI 4.0: Corrección de Carga Lenta, Doble Fetch y Parpadeo de "Cargando datos...")
+
+- **Optimización y Estabilización del Módulo de Facturación (`FacturacionPage.tsx`, `FacturacionBitacoraTab.tsx`)**:
+  - **Problema Reportado**: Al abrir el módulo de facturación, se quedaba la leyenda "Cargando datos..." y las facturas aparecían y desaparecían repetidamente (parpadeo visual).
+  - **Diagnóstico y Causas Raíz**:
+    1. **Doble Fetch en Cascada por Dependencia de `config`**: En `loadInvoices`, se llamaba concurrentemente a `obtenerFacturas` y `obtenerConfiguracion()`. Al resolver la configuración, se ejecutaba `setConfig(configData)`. Al estar `config` en el arreglo de dependencias de `useCallback`, la función `loadInvoices` se recreaba inmediatamente, disparando un segundo `useEffect` consecutivo con `setLoading(true)`, lo que provocaba que la tabla se montara, se destruyera y se volviera a montar en fracciones de segundo.
+    2. **Destrucción Completa del DOM de la Tabla en `loading: true`**: La condición `{loading ? <p>Cargando datos...</p> : <table>...}` reemplazaba todo el bloque de la tabla y paginación por un elemento `<p>`, causando saltos bruscos de maquetación (Layout Shift) en cada actualización.
+    3. **Desincronización de Fechas por Defecto**: Los campos de entrada `startDate` y `endDate` se inicializaban con `today` (`09/11/2026`), mientras que `appliedFilters` tenía cadenas vacías `''`. Cualquier interacción o búsqueda aplicaba la fecha de hoy, ocultando todas las facturas emitidas en fechas previas (como las del `08/11/2026`), dando la impresión de que las facturas desaparecían.
+  - **Soluciones Implementadas**:
+    1. **Desacoplamiento de Carga de Configuración**: La configuración fiscal del emisor ahora se consulta una sola vez al montar el componente en su propio `useEffect` dedicado, eliminando por completo `config` de las dependencias de `loadInvoices`.
+    2. **Estructura de Tabla Permanentemente Montada**: El elemento `<table>` y el componente `<TablePagination>` se mantienen fijos y montados en el DOM en todo momento. La animación de carga `⏳ Cargando facturas emitidas...` y el estado vacío se renderizan limpiamente como filas `<tr><td colSpan={9}>` dentro de `<tbody>`, eliminando cualquier parpadeo o colapso visual.
+    3. **Sincronización de Filtros de Fecha**: Inicializados `startDate` y `endDate` como cadenas vacías `''` de forma consistente, permitiendo visualizar todas las facturas emitidas sin cortes arbitrarios por día, salvo que el usuario seleccione explícitamente un rango.
+    4. **Extensión a la Bitácora Técnica (`FacturacionBitacoraTab.tsx`)**: Se aplicó la misma arquitectura estable (tabla fija en DOM con spinner en `<tbody>` y fechas limpias) en la pestaña de bitácora técnica de FiscalAPI.
+  - **Pruebas y Verificación**:
+    - Backend: 122/122 pruebas unitarias e integración aprobadas al 100%. API respondiendo en ~22ms.
+    - Frontend: 53/53 pruebas unitarias de Vitest aprobadas. Build de producción Vite completado limpiamente en 18.49s con 0 errores TypeScript.
+    - Servidores activos: Backend API en `http://localhost:5000` y Frontend SPA en `http://localhost:5173`.
+  - **Estado Git**:
+    - Working tree local sin commits ni empujes remotos conforme a las directivas del proyecto.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo Notas de Venta: Reestructuración de Filtro de Estados de Venta y Columna de Estado con Badges)
+
+- **Reestructuración del Filtro de Estados de Venta (`NotasVentaPage.tsx`, `NotaVentaApplicationService.cs`, `tiposNotasVenta.ts`)**:
+  - **Problema Reportado**: El selector `<select className="notas-filter-select">` contenía opciones en inglés desalineadas con la base de datos (`Completed`, `DepositPaid`, `PendingPayment`, `Cancelled`), por lo que al seleccionar "Completada" no devolvía resultados debido a que en SQL Server el campo `Sales.Estado` almacena valores en español (`Completada`, `Cancelada`, etc.).
+  - **Ajustes y Mejoras Implementadas**:
+    1. **Opciones del Selector Reestructuradas con Estados Reales del Dominio**:
+       - `ALL`: Todos los estados / 所有状态
+       - `Completada`: ✔ Completada / ✔ 已完成
+       - `ApartadoPagado`: 📦 Con Anticipo / 📦 定金已付
+       - `PendientePago`: ⏳ Pendiente de Pago / ⏳ 待付款
+       - `Cancelada`: ✕ Cancelada / ✕ 已取消
+       - `DevolucionParcial`: ↩ Devolución Parcial / ↩ 部分退货
+       - `Devuelta`: ↩ Devuelta / ↩ 全部退货
+    2. **Mapeo Bidireccional Robusto en Backend (`NotaVentaApplicationService.cs`)**:
+       - Soporta de forma transparente tanto los valores reales en español almacenados en base de datos como sus alias o constantes del dominio (`SaleStatuses.Completed`, `SaleStatuses.Cancelled`, `SaleStatuses.DepositPaid`, etc.).
+       - Probado con la base de datos real: 15 ventas totales -> Filtro `Completada` retorna 9 registros; Filtro `Cancelada` retorna 6 registros.
+    3. **Nueva Columna "Estado" en la Tabla de Notas de Venta**:
+       - Agregada la columna `Estado` / `状态` en el encabezado `<thead>` y celdas `<td>` con badges estilizados según el estado:
+         - `✔ Completada` (Verde: `.badge-completada`)
+         - `✕ Cancelada` (Rojo: `.badge-cancelada`)
+         - `📦 Con Anticipo` (Azul: `.badge-apartado`)
+         - `⏳ Pendiente Pago` (Ámbar: `.badge-pendiente`)
+         - `↩ Dev. Parcial` / `↩ Devuelta` (Púrpura: `.badge-devolucion`)
+    4. **Corrección de Mapeo de Paginación (`totalItems`)**:
+       - En `tiposNotasVenta.ts` y `NotasVentaPage.tsx`, se mapea `res.totalItems ?? res.totalCount ?? 0` para asegurar que el contador de registros y cálculo de páginas refleje con exactitud la respuesta del backend.
+  - **Pruebas y Verificación**:
+    - Backend: `dotnet build src/backend/Pos.sln` exitoso con 0 errores. 122/122 pruebas unitarias e integración aprobadas.
+    - Frontend: `npm run build` en `pos-web` exitoso en 18.54s con 0 errores. 53/53 pruebas unitarias de Vitest aprobadas.
+    - Servidores activos: Backend API en `http://localhost:5000` y Frontend SPA en `http://localhost:5173`.
+  - **Estado Git**:
+    - Working tree local sin commits ni empujes remotos conforme a las directivas del proyecto.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo Notas de Venta: Folio Consecutivo Identity 1-1, Esquinas Curvas, Datos Reales E-commerce y Depuración Visual)
+
+- **Ajustes y Refinamiento del Módulo de Notas de Venta (`NotasVentaPage.tsx`, `NotaVentaPdfService.cs`, `NotaVentaApplicationService.cs`)**:
+  - **Solicitudes de Usuario Implementadas al 100%**:
+    1. **Folio Consecutivo Identity 1-1**:
+       - Sustituido el identificador GUID interno largo (ej. `VENTA-20261108-656C4F9108ED4`) por el `IdVenta` numérico secuencial (ej. `#25`).
+       - Visible tanto en la tabla frontend (`#25`), búsqueda, como en el recuadro destacado superior derecho del documento PDF (`Folio: 25`). El GUID se conserva internamente en la base de datos para integridad referencial sin ser expuesto al usuario.
+    2. **Eliminación del Flujo y Estado de Entrega**:
+       - La entrega física es un proceso operativo posterior independiente; se retiró la columna "Estado Entrega", el botón de acción "🚚 Entrega", el diálogo modal de confirmación y el filtro de entrega del frontend.
+       - Acciones limpias y enfocadas exclusivamente en: `👁️ Vista previa`, `📥 PDF` e `🖨️ Imprimir`.
+       - Métricas rápidas consolidadas en 3 tarjetas: Total Notas de Venta, Notas en Página y Total Comercial ($).
+    3. **Nombre del Cliente Limpio (Sin duplicación de Razón Social)**:
+       - La columna y bloque de cliente muestran exclusivamente el nombre del titular (`${Cliente.Nombre} ${Cliente.Apellido}`, ej. `Aaron Arenas Martinez` o `Público General`) sin duplicar entre paréntesis la razón social ni concatenar textos redundantes.
+    4. **Bordes Curvos Redondeados en PDF (QuestPDF con Dynamic SVG Vectorial)**:
+       - Implementado helper `RoundedCard` con `layers.Layer().Svg(size => ...)` dinámico que calcula milimétricamente el espacio natural con `rx="6"` y `ry="6"`, bordes suaves y fondos correspondientes (`#FAF8F5`, `#FEF7EB`).
+       - Aplicado a todos los recuadros del documento: Recuadro NOTA DE VENTA, Tarjeta DATOS DEL CLIENTE, Recuadro OBSERVACIONES y Recuadro TOTALES.
+    5. **Datos Comerciales Reales de WPC Bajío (Alineados al E-commerce)**:
+       - Dirección: `Blvd. Adolfo López Mateos 2826, Col. El Rosario`
+       - Ciudad / C.P.: `León de los Aldama, Guanajuato, C.P. 37125`
+       - Tel. / WhatsApp: `477 807 2768`
+       - Correo y Sitio: `contacto@wpcbajio.com` | `www.wpcbajio.com`
+    6. **Depuración del Layout del PDF**:
+       - Eliminado completamente el recuadro `ENTREGAR A / DESTINO`.
+       - Eliminado completamente el recuadro/sello `ESTADO: ENTREGADO` / `PENDIENTE DE ENTREGA`.
+       - Eliminada la etiqueta `Saldo: $0.00 (Liquidado)` (únicamente se muestra saldo si existe monto pendiente > 0).
+       - El recuadro `DATOS DEL CLIENTE` ahora abarca el ancho completo con distribución balanceada en 2 columnas internas (Nombre, RFC y Teléfono a la izquierda; Email, Dirección y Ciudad/CP a la derecha).
+  - **Pruebas y Verificación**:
+    - Backend: `dotnet build src/backend/Pos.sln` exitoso con 0 errores. 122/122 pruebas unitarias e integración aprobadas (`Pos.Domain.Tests`: 19, `Pos.Application.Tests`: 82, `Pos.Api.IntegrationTests`: 21).
+    - Frontend: `npm run build` en `pos-web` exitoso en 13.56s con 0 errores TypeScript. 53/53 pruebas unitarias de Vitest aprobadas.
+    - Generación visual verificada mediante renderizado a imagen (`nota_venta_25_preview.png`) confirmando bordes curvos, folio `#25`, datos reales y eliminación de recuadros redundantes.
+    - Servidores activos: Backend API en `http://localhost:5000` y Frontend SPA en `http://localhost:5173`.
+  - **Estado Git**:
+    - Working tree local sin commits ni empujes remotos.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo Standalone: Notas de Venta Comerciales — WPC Bajío)
+
+- **Módulo Standalone de Notas de Venta Comerciales (`NotasVentaPage.tsx`, `NotaVentaPdfService.cs`, `NotasVentaController.cs`)**:
+  - **Objetivo**: Proporcionar generación, consulta, reimpresión y descarga de Notas de Venta en formato PDF tamaño carta profesional, con identidad corporativa de WPC Bajío, completamente desacoplado de FiscalAPI y sin efectos fiscales ni consumo de timbres.
+  - **Backend (.NET 9 ASP.NET Core & QuestPDF 2024.12)**:
+    1. **Servicio PDF (`NotaVentaPdfService.cs`)**:
+       - Diseñado en tamaño Carta (216 × 279 mm), vertical, márgenes para impresión doméstica y paleta de colores corporativa oficial (`#9C4D22`, `#833E1A`, `#6F3215`, `#FAF8F5`, `#FEF7EB`, `#F3E9DA`, `#3A2312`, `#7A6657`).
+       - Encabezado con logotipo oficial WPC Bajío (`logo_wpc_bajio.jpeg`), datos de contacto de la empresa (León, Gto.), recuadro destacado de "NOTA DE VENTA / SIN EFECTOS FISCALES" con folio histórico y fecha/hora.
+       - Sección de 2 columnas: "DATOS DEL CLIENTE" y "ENTREGAR A / DESTINO" (modalidad de entrega, dirección y contacto).
+       - Tabla dinámica con desglose de productos (descripción comercial, SKU, cantidad, unidad, cálculo automático de piezas totales para cajas de lambrín, precio unitario histórico, descuentos e importe).
+       - Sección inferior con observaciones, sello oficial de entrega (`✔ ESTADO: ENTREGADO` en verde o `⏳ ESTADO: PENDIENTE DE ENTREGA` en ámbar), totales históricos (subtotal, descuento, IVA únicamente si está registrado en la venta, total y estado de pago/saldo).
+       - Leyenda legal obligatoria: *"Documento comercial sin efectos fiscales. No sustituye un comprobante fiscal digital por Internet (CFDI)."*
+       - Pie de página con numeración dinámica "Página X de Y".
+    2. **Capa de Aplicación y Controlador REST (`NotasVentaController.cs` & `NotaVentaApplicationService.cs`)**:
+       - `GET /api/v1/notas-venta/ventas`: Consulta paginada (25 ítems) con filtros por folio, cliente, RFC, rango de fechas, estado de venta y estado de entrega.
+       - `GET /api/v1/notas-venta/ventas/{ventaId}`: Obtiene el DTO completo estructurado.
+       - `GET /api/v1/notas-venta/ventas/{ventaId}/pdf`: Genera y retorna el documento en formato `application/pdf` con auditoría automática en bitácora.
+       - `POST /api/v1/notas-venta/ventas/{ventaId}/confirmar-entrega`: Permite alternar o confirmar la entrega física del material, persistiendo en `Notas` de la venta y registrando en `IAuditLogService`.
+  - **Frontend SPA (React 18, TypeScript & Vite)**:
+    1. **Navegación e i18n**: Opción de menú independiente `📋 Notas de Venta` / `📋 销售单据` agregada en `App.tsx` y `accessControl.ts` para cajeros y administradores.
+    2. **Pantalla Principal (`NotasVentaPage.tsx` & `.css`)**:
+       - 4 tarjetas de métricas en vivo: Total Ventas, Entregadas, Pendientes de Entrega y Total comercial en página.
+       - Barra de filtros avanzados (búsqueda rápida, estado de venta, estado de entrega, fecha inicio, fecha fin y botón de limpieza).
+       - Tabla con 25 registros por página, badges visuales de entrega (`ENTREGADO` / `PENDIENTE`) y botones de acción rápida:
+         - `👁️ Vista previa`: Diálogo modal con visor de PDF integrado para revisar antes de imprimir.
+         - `📥 PDF`: Descarga directa con nombre sanitizado `NotaVenta_{folio}.pdf`.
+         - `🖨️ Imprimir`: Impresión directa en tamaño carta usando iframe del navegador.
+         - `🚚 Entrega`: Diálogo modal para marcar como entregado o revertir a pendiente, con captura opcional de observaciones de recepción.
+    3. **Integración en Historial de Ventas (`SalesHistoryPage.tsx`)**:
+       - Botón directo `📋 Nota` en la columna de acciones para descarga inmediata en 1 solo clic.
+  - **Pruebas y Verificación**:
+    - Backend: Compilación limpia sin errores. 122/122 pruebas unitarias e integración aprobadas (incluyendo 3 nuevas pruebas unitarias para `NotaVentaTests`: consulta paginada, alternancia de entrega auditada y generación de PDF).
+    - Frontend: Build de producción con Vite exitoso en 18.30s (0 errores de TypeScript) y 53/53 pruebas de Vitest aprobadas (incluyendo pruebas unitarias para `servicioNotasVenta`).
+    - Servidores activos: Backend API en `http://localhost:5000` y Frontend SPA en `http://localhost:5173`.
+  - **Estado Git**:
+    - Working tree local intacto, sin commits ni empujes a repositorios remotos según las reglas del proyecto.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Punto de Venta: Combo Personalizado Buscable de Clientes con Chips Fiscales y Diseño Moderno)
+
+- **Sustitución de `<select>` Nativo por Componente de Combo Buscable (`PaginaPuntoVenta.tsx` & `.css`)**:
+  - **Problema Reportado**: El combo desplegable de clientes en el Punto de Venta se mostraba con el menú gris sin estilos nativo del navegador, acumulando cadenas de texto largas y sin jerarquía visual.
+  - **Solución Implementada**:
+    1. **Botón Disparador Estilizado (`.pos-customer-select-trigger`)**:
+       - Muestra avatar/ícono (`👥` Público General / `👤` Cliente específico), nombre en negrita, badge por tipo (`Mayorista` en verde, `Arquitecto` en morado, `Particular` en gris) y chips secundarios con RFC (`🏷️ RFC: ...`), CP (`📍 CP: ...`) y teléfono.
+       - Botón directo `✕` para deseleccionar rápidamente a Público General.
+       - Indicador de flecha con rotación animada de 180° al abrir/cerrar.
+    2. **Menú Flotante con Búsqueda en Vivo (`.pos-customer-dropdown-menu`)**:
+       - Elevación con sombra suave (`0 14px 32px rgba(0,0,0,0.2)`), bordes redondeados (10px) y animación fluida `posFadeInDown`.
+       - Barra de búsqueda superior con icono `🔍`, auto-focus inmediato al desplegar y filtrado en tiempo real por nombre, razón social, RFC, teléfono o código postal.
+       - Tarjetas individuales de clientes con hover interactivo y borde de acento en oro cálido (`var(--primary-main)`).
+       - Opción predeterminada `Público General` resaltada con checkmark de selección.
+       - Estado vacío con botón rápido para registrar a un cliente nuevo si no coincide con la búsqueda.
+       - Cierre automático al hacer clic fuera del componente o presionar la tecla `Escape`.
+  - **Pruebas y Verificación**:
+    - Frontend: Build de producción con Vite exitoso en 16.58s con 0 errores y 51/51 pruebas de Vitest aprobadas.
+    - Servidores activos: Frontend SPA en `http://localhost:5173` y Backend API en `http://localhost:5000`.
+  - **Estado Git**:
+    - Working tree local intacto, sin commits ni empujes a repositorios remotos.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Punto de Venta: Alta de Clientes con RFC y CP e Integración de IVA para CFDI 4.0)
+
+- **Captura Fiscal en Modal "+ Cliente" del Punto de Venta (`PaginaPuntoVenta.tsx`)**:
+  - **Requerimiento**: El cajero requería registrar clientes con su RFC y Código Postal (CP) directamente desde la pantalla de cobro del PDV sin tener que navegar al módulo administrativo de Clientes, asegurando que cuando el cliente solicite factura, los datos fiscales y el IVA del 16% viajen completos y exactos.
+  - **Ajustes Realizados en Frontend (`pos-web`)**:
+    1. **Campos Fiscales Agregados**:
+       - `taxId` (RFC / Tax ID): Máximo 13 caracteres, conversión automática a mayúsculas, validación de formato SAT mediante regex (`^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$`).
+       - `postalCode` (Código Postal Fiscal): Máximo 5 dígitos numéricos, con auto-resolución geográfica (ciudad/estado) mediante `lookupPostalCode` para verificar que pertenezca a un código postal mexicano válido (por defecto `37000 León, Gto`).
+    2. **Experiencia de Usuario en Caja**:
+       - Diseño responsive en doble columna dentro del diálogo modal con cierre rápido (botón `✕` y tecla `Escape`).
+       - El selector de clientes en la barra lateral ahora despliega el RFC y el CP de cada cliente disponible (`DisplayName · RFC: ... · CP: ...`).
+       - Al seleccionar un cliente, se muestra una barra de información fiscal confirmando su RFC y CP.
+       - Al activar `¿Desea facturar? (Aplicar 16% IVA)`, se muestra una alerta contextual con el destino fiscal del CFDI (RFC del cliente o RFC genérico para público en general) y se desglosa el concepto `IVA (16% IVA)` sumado al total.
+  - **Ajustes Realizados en Backend (`Pos.Infrastructure` y `Pos.Domain`)**:
+    1. **Sincronización en `CatalogApplicationService.cs`**:
+       - Al crear o actualizar un cliente con RFC y código postal, se sincroniza tanto `CodigoPostal` como `CodigoPostalFiscal = values.PostalCode`, permitiendo que la vista previa y el timbrado en `FacturacionApplicationService` identifiquen el domicilio fiscal sin advertencias.
+    2. **Prorrateo de Descuento en `FacturacionApplicationService.cs`**:
+       - Cuando una venta tiene descuento global aplicado en caja (`sale.MontoDescuento > 0`), se prorratea equitativamente a nivel centavos entre cada partida para que los conceptos del CFDI 4.0 (`Concepto.Descuento`) y el total coincidan 100% con las reglas matemáticas del SAT.
+  - **Pruebas y Verificación**:
+    - Backend: Compilación limpia con 0 errores y 119/119 pruebas unitarias aprobadas.
+    - Frontend: Build de producción con Vite exitoso en 17.86s y 51/51 pruebas de Vitest aprobadas al 100%.
+    - Servidores activos en localhost: Backend API en `http://localhost:5000` y Frontend SPA en `http://localhost:5173`.
+  - **Estado Git**:
+    - Working tree local intacto, sin commits ni empujes a repositorios remotos.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo de Facturación: Consulta de Estado SAT Verificada al 100%)
+
+- **Corrección de Parámetros Excluyentes en `ConsultarEstadoSat` y `SolicitarCancelacion`**:
+  - **Problema Detectado**: Al consultar el estado del SAT de una factura desde el modal de detalle, FiscalAPI rechazaba la solicitud con el mensaje: `Debe proporcionar solo el 'Id' o el resto de los campos, pero no ambos.`
+  - **Causa Raíz**: El SDK de FiscalAPI maneja identificación mutuamente excluyente: si se provee el `Id` interno de FiscalAPI (`FiscalapiInvoiceId`), no deben enviarse los campos fiscales `InvoiceUuid`, `IssuerTin`, `RecipientTin` ni `InvoiceTotal` (o viceversa). Nuestro código estaba enviando ambos conjuntos simultáneamente en `InvoiceStatusRequest` y `CancelInvoiceRequest`.
+  - **Solución Implementada**:
+    - `Pos.Infrastructure/Invoicing/Services/FacturacionApplicationService.cs`:
+      - `ConsultarEstadoSatAsync`: Si `FiscalapiInvoiceId` existe, se envía exclusivamente `req.Id = factura.FiscalapiInvoiceId`. Si está ausente, se envían los campos del comprobante SAT (`InvoiceUuid`, `IssuerTin`, `RecipientTin`, `InvoiceTotal`).
+      - `SolicitarCancelacionAsync`: Misma lógica excluyente aplicada a `CancelInvoiceRequest` para prevenir el mismo error al cancelar.
+  - **Pruebas y Verificación**:
+    - Backend recompilado limpiamente con 0 errores (`Pos.sln`).
+    - Prueba real ejecutada para la factura `630237C5-A3EB-4236-9AFC-BCE4D2E43B58` (UUID `d0d67121-9578-44f6-904c-1df085cc3641`, Folio A-2):
+      - `HTTP 200 OK` en 1106 ms.
+      - Estado SAT devuelto por el PAC: `Vigente`.
+      - Cancelabilidad: `Cancelable sin aceptación`.
+      - Validación EFOS: `200` (limpia, no listada en EFOS del SAT).
+      - `FacturacionFactura.EstadoSat` actualizado a `Vigente` en base de datos.
+  - **Estado Git**:
+    - Working tree local intacto, sin commits ni empujes a repositorios remotos.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo de Facturación: Modal Flotante Centrado en Bitácora Técnica de FiscalAPI)
+
+- **Corrección de Modal de Diagnóstico en Bitácora Técnica (`FacturacionLogDetalleModal`)**:
+  - **Problema Detectado**: Al hacer clic en el botón de inspección (🔍) de un registro en la pestaña **Bitácora Técnica FiscalAPI**, el detalle de la llamada se renderizaba como bloque estático al fondo de la página por falta de clases CSS de overlay (`.modal-backdrop` y `.modal`), forzando un scroll hacia abajo en vez de abrir un diálogo superpuesto.
+  - **Ajustes Implementados**:
+    1. **Estilos de Modal en `FacturacionPage.css`**:
+       - `.modal-backdrop` y `.pos-receipt-backdrop`: Posicionamiento fijo `position: fixed; inset: 0; z-index: 1200;` con fondo translúcido oscuro `rgba(15, 23, 42, 0.72)` y desenfoque `backdrop-filter: blur(4px)`.
+       - `.modal` y `.pos-customer-modal`: Diálogo centrado, bordes redondeados (12px), sombra de elevación (25px), ancho máximo dinámico (`950px` para `modal-lg`) y animación fluida de entrada.
+       - Estilos consistentes para `.modal-header`, `.modal-body` (scrollable), `.modal-footer` y botón de cierre `✕`.
+    2. **Imports en Componentes**:
+       - `FacturacionBitacoraTab.tsx` y `FacturacionLogDetalleModal.tsx` importan explícitamente `FacturacionPage.css`.
+  - **Pruebas y Verificación**:
+    - Build de frontend con Vite completado en 11.83s con 0 errores de TypeScript y empaquetado CSS exitoso.
+    - El modal ahora se abre inmediatamente centrado sobre la tabla con visor de request/response sanitizados, JSON formateado con botones de copiado y cadena de llamadas vinculadas por Correlation ID.
+  - **Estado Git**:
+    - Working tree local intacto, sin commits ni empujes a repositorios remotos conforme a la regla del usuario.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo de Facturación: Depuración de Facturas Emitidas a 1 Registro por Comprobante Timbrado)
+
+- **Corrección de Listado en "Facturas Emitidas" (Unicidad y Exclusión de Rechazos Técnicos)**:
+  - **Problema Detectado**: Cada intento fallido de timbrado previo (falta de tenant, sin saldo de timbres, discrepancia de RFC) generaba un registro con estado `Rechazada` en la tabla `FacturacionFactura`, provocando que la pestaña "Facturas Emitidas" mostrara 17 filas (15 rechazos técnicos repetidos como si fuera un log) para únicamente 2 facturas reales.
+  - **Ajustes Implementados**:
+    1. **Backend (`FacturacionApplicationService.cs`)**:
+       - `ObtenerFacturasAsync`: Se ajustó el filtro base para que, cuando no se especifique estado, se listen únicamente comprobantes fiscales válidos (`Timbrada`, `Cancelada`, `CancelacionSolicitada`, `ResultadoPorConfirmar`), excluyendo estrictamente `Rechazada` y `Borrador`.
+       - `EmitirFacturaVentaAsync`: Al reintentar el timbrado de una venta con un intento previo rechazado, se reutiliza y actualiza la entidad existente en lugar de insertar una fila duplicada.
+    2. **Frontend (`FacturacionPage.tsx`)**:
+       - El selector de estado tiene como valor predeterminado `Timbrada`, garantizando que al ingresar a la pestaña solo se visualicen las facturas timbradas vigentes.
+       - Se removieron las opciones de rechazo técnico (`Rechazada`, `EnProceso`) del selector de comprobantes emitidos (los rechazos técnicos permanecen auditados en la pestaña "Bitácora Técnica FiscalAPI").
+       - Las tarjetas de métricas muestran el total exacto de facturas timbradas (`Total Facturas: 2`, `Facturas Timbradas: 2`, `Monto Facturado: $366.56 MXN`).
+    3. **Depuración de Base de Datos Local (`PosLambrinDb`)**:
+       - Se depuraron los 15 registros huérfanos con estado `Rechazada` de `FacturacionFactura`, manteniendo exactamente los 2 registros timbrados oficiales (`A-1` y `A-2`).
+       - Los 17 registros completos de auditoría HTTP y trazabilidad con FiscalAPI permanecen íntegros en `FacturacionLog`.
+  - **Pruebas y Verificación**:
+    - Backend: Compilación limpia sin errores con `dotnet build src/backend/Pos.sln`.
+    - Endpoint `GET /api/v1/facturacion/invoices`: Retorna exactamente 2 elementos (`A-1` y `A-2`) en estado `Timbrada`.
+    - Frontend: Build de Vite completado en 11.74s con 0 errores.
+  - **Estado Git**:
+    - Working tree local intacto, sin commits ni empujes a repositorios remotos.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo de Facturación: Primer CFDI 4.0 Timbrado Exitosamente con FiscalAPI)
+
+- **Primer Timbrado Oficial de CFDI 4.0 Completado con Éxito (Venta #23)**:
+  - **UUID SAT**: `4cbb6b1e-a5c9-484b-9bf7-a37bc3b075df`
+  - **Serie y Folio**: `A-1`
+  - **Emisor SAT**: `EKU9003173C9` (*ESCUELA KEMPER URGATE*, Régimen `601`, CP `42501`) con sellos digitales CSD oficiales de prueba vinculados y activos en FiscalAPI.
+  - **Receptor Fiscal**: `AEMA960428ME6` (*AARON ARENAS MARTINEZ*, Régimen `612`, CP `37545`, Uso `G03`).
+  - **Artefactos Fiscales Generados y Persistidos**:
+    - **XML CFDI 4.0**: Sellado digitalmente por el PAC y almacenado en base de datos (`4,861 bytes`).
+    - **Representación Gráfica PDF**: Generada automáticamente, descargada y vinculada en almacenamiento local (`137,330 bytes`).
+  - **Bitácora Técnica Auditada (`FacturacionLog`)**:
+    - Operación: `Emitir` (POST)
+    - Código HTTP real de FiscalAPI: `200 OK`
+    - Latencia de timbrado: `372 ms`
+    - Estado: `Succeeded = 1`, `EstadoEjecucion = Finalizada`
+  - **Ajustes de Integración FiscalAPI Resueltos**:
+    - Corrección en `FacturacionApplicationService.cs`: Mapeo de `TaxFlagCode = "T"` (en lugar del texto `"Traslado"`) conforme a las especificaciones del SDK oficial.
+    - Asignación de `Issuer.Id` vinculado a la entidad pre-registrada en FiscalAPI (`980ec84f-90b4-4a8d-a2e7-eb19d5c60f52`).
+    - Verificación del saldo de timbres: confirmada la necesidad de contar con créditos en la columna de *Créditos de Timbres* (CFDI) para el emisor.
+  - **Estado Git**:
+    - Trabajo íntegro preservado en el working tree local sin commits ni empujes remotos conforme a la regla del usuario.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo de Facturación: Credenciales QA FiscalAPI Integradas y Verificación Exitosa)
+
+- **Integración de Credenciales Sandbox FiscalAPI**:
+  - `ApiKey`: `sk_test_e91be921_0861_4d83_b62e_676c6441a586` configurada en `appsettings.Development.json` y `appsettings.json`.
+  - `Tenant`: `a97a851a-45bf-4be0-a48e-7c9bf4b18c30` configurado en `appsettings.Development.json` y `appsettings.json`.
+  - Backend reiniciado exitosamente en `http://localhost:5000` con `IFiscalApiClient` instanciado contra el sandbox oficial (`https://test.fiscalapi.com`).
+  - **Prueba Funcional de Extremo a Extremo en Localhost**:
+    - `PUT /api/v1/facturacion/config`: Emisor de pruebas configurado con éxito (`EKU9003173C9`, `ESCUELA KEMPER URGATE`, CP `37000`, Régimen `601`).
+    - `GET /api/v1/facturacion/sales/{saleId}/preview`: Vista previa de comprobante fiscal generada con éxito para la venta #22 (`VENTA-20261022-95FF80BE96504`, Total: $316.00 MXN, Subtotal: $272.42 MXN, IVA 16%: $43.58 MXN).
+    - Estado de elegibilidad: `esElegibleParaFacturar = true`, `bloqueos = []`, validación SAT v4.0 completa.
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo de Facturación: Corrección de Inicialización DI y Soporte Localhost)
+
+- **Corrección de Inicialización del Cliente FiscalAPI (`Tenant is required`)**:
+  - **Causa Raíz**: Al acceder a la ruta `/facturacion` en el navegador, el `FacturacionController` resuelve a través del contenedor DI a `IFiscalApiClient`. El SDK oficial `FiscalApiClient.Create(settings)` ejecuta internamente `ValidateSettings`, el cual lanza de manera estricta `ArgumentException: Tenant is required (Parameter 'Tenant')` cuando `settings.Tenant` es nulo o vacío. Dado que las credenciales no estaban configuradas en `appsettings.Development.json` ni tenían un valor por defecto en `DependencyInjection.cs`, la fábrica de controladores de ASP.NET Core fallaba arrojando error 500 antes de poder acceder incluso a la configuración.
+  - **Solución Implementada**:
+    - `Pos.Infrastructure/DependencyInjection.cs`: Se agregaron valores por defecto seguros (`"NOT_CONFIGURED"`) tanto para `Tenant` como para `ApiKey` y `"America/Mexico_City"` para `TimeZone` en la resolución de `IFiscalApiClient`, garantizando una degradación elegante sin romper la inicialización del controlador.
+    - `Pos.Api/appsettings.json` y `appsettings.Development.json`: Se configuraron placeholders predeterminados de desarrollo (`sandbox_dev_placeholder_tenant`, `sandbox_dev_placeholder_key`).
+    - Base de datos local: Restaurada exitosamente desde el respaldo de VPS (`PosLambrinDb_Prod.bak`) con la migración `20261108052821_AddFacturacionModuleCompleto` y permisos `facturacion:*` sembrados.
+    - Servicios en ejecución: Backend en `http://localhost:5000` y Frontend en `http://localhost:5173`. Verificados endpoints `GET /api/v1/facturacion/config` (200 OK), `GET /api/v1/facturacion/invoices` (200 OK) y `GET /api/v1/facturacion/bitacora` (200 OK).
+
+## 🟢 ESTADO PREVIO (08 de Noviembre, 2026 - Módulo de Facturación CFDI 4.0: Base de Datos y Bitácora Técnica de FiscalAPI)
+
+- **Implementación Completa de Base de Datos Relacional y Bitácora Técnica de Facturación (`FacturacionLog`)**:
+  - **11 Tablas Relacionales e Índices en SQL Server (EF Core 9)**:
+    1. `FacturacionConfiguracion`: Parámetros fiscales y operativos por empresa, sucursal y ambiente (`QA`/`PR`).
+    2. `FacturacionReferenciaExterna`: Mapeo de IDs locales con identificadores externos en FiscalAPI (`PersonId`, `ProductId`, `TaxFileId`).
+    3. `FacturacionFactura`: Encabezado fiscal CFDI 4.0, UUID, importes monetarios en `decimal(18,2)`, RFC emisor/receptor, método/forma de pago y estados.
+    4. `FacturacionFacturaDetalle`: Conceptos con claves SAT, unidad, descripción, SKU, cantidades y precios en `decimal(18,4)`.
+    5. `FacturacionFacturaImpuesto`: Desglose pormenorizado de impuestos (Base `decimal(18,2)`, Tasa `decimal(18,6)`, Importe `decimal(18,2)`).
+    6. `FacturacionFacturaVenta`: Relación asociativa N:M entre ventas locales y comprobantes fiscales.
+    7. `FacturacionIntento`: Historial de solicitudes de emisión/revisiones con llaves de idempotencia únicas y resultado.
+    8. `FacturacionDocumento`: Almacenamiento seguro y cacheo de artefactos fiscales (XML timbrado, representación gráfica PDF, Acuses) con hash SHA256 para evitar consumo redundante de cuota del PAC.
+    9. `FacturacionCancelacion`: Solicitudes ante el SAT (motivos `01`-`04`, UUID de sustitución, fecha y acuse XML).
+    10. `FacturacionHistorialEstado`: Trazabilidad funcional inmutable de transiciones de estado con usuario y timestamp UTC.
+    11. `FacturacionLog`: **Bitácora técnica exclusiva** de cada interacción HTTP con FiscalAPI.
+    - Migración EF Core versionada: `20261108052821_AddFacturacionModuleCompleto.cs` aplicada al snapshot.
+  - **Bitácora Técnica Profunda (`FacturacionLog` & `IFacturacionLogService`)**:
+    - Ciclo de vida en dos fases: Pre-llamada (`Iniciada`) antes del envío HTTP y Post-llamada (`Finalizada` / `Interrumpida` / `ResultadoIncierto`).
+    - Medición exacta de latencia en milisegundos (`DuracionMs`).
+    - Registro del código HTTP real recibido (`HttpStatusCode`) del proveedor.
+    - **Regla Estricta de Cero Códigos Sintéticos**: Ante caídas de red, DNS o timeouts, `HttpStatusCode` permanece en `NULL`, con `EstadoEjecucion = "ResultadoIncierto"` o `"Interrumpida"`, evitando inventar respuestas HTTP inexistentes.
+    - Manejo resiliente de timeouts en emisión: la factura local pasa a `ResultadoPorConfirmar` sin arrojar 500 al cajero, permitiendo conciliación SAT sin duplicar timbres.
+  - **Sanitización Estricta de Seguridad (`FacturacionSanitizer`)**:
+    - Enmascaramiento recursivo (`***REDACTED***`) de API keys, tenant keys, passwords, bearer tokens y certificados.
+    - Exclusión de payloads voluminosos en Base64 (`[BASE64_DOCUMENT_DATA_EXCLUDED: length=X]`).
+    - Truncamiento de seguridad con límite de 16 KB para prevenir ataques de saturación en base de datos.
+  - **Endpoints REST en `FacturacionController`**:
+    - `GET /api/v1/facturacion/bitacora`: Paginación y filtrado multicriterio (fechas, ambiente, operación, resultado, correlationId, UUID, venta, HTTP status).
+    - `GET /api/v1/facturacion/bitacora/{id}`: Detalle completo de una llamada individual.
+    - `GET /api/v1/facturacion/bitacora/relacionadas/{correlationId}`: Rastreo de la cadena completa de llamadas de una operación.
+    - `POST /api/v1/facturacion/bitacora/purgar`: Purga controlada de logs técnicos por días de retención (mínimo 30 días, default 90), restringida a `facturacion:bitacora_purgar`.
+  - **Frontend Diagnóstico (`pos-web`)**:
+    - Pestaña de navegación en `FacturacionPage.tsx`: `🧾 Facturas Emitidas` y `📡 Bitácora Técnica FiscalAPI`.
+    - Componente `FacturacionBitacoraTab.tsx`: Filtros de búsqueda, métricas de rendimiento (llamadas totales, tasa de éxito, errores 4xx, latencia promedio), tabla interactiva y modal de confirmación de purga.
+    - Modal `FacturacionLogDetalleModal.tsx`: Resumen técnico, inspector de Request/Response sanitizados en formato JSON con botones de copiado rápido, traza de excepción y visor de cadena de llamadas correlacionadas.
+    - Soporte bilingüe en `i18n/index.ts` (Español y Chino Simplificado `zh-CN`).
+  - **Pruebas y Verificación**:
+    - Backend: **119/119 pruebas unitarias e integración pasando al 100%** (19 Domain, 79 Application, 21 Api.IntegrationTests).
+    - Frontend: **51/51 pruebas de Vitest pasando al 100%** (8 suites de prueba). Build de producción Vite completado exitosamente en 11.42s con 0 errores.
+  - **Estado Git**:
+    - En apego estricto a la instrucción del usuario (*"no, no hacer commit . necesito hacer pruebas de manera localhost en mi equipo"*), todos los cambios se conservan en el árbol de trabajo local sin realizar commits ni empujes remotos.
+
+## 🟢 ESTADO PREVIO (07 de Octubre, 2026 - Corrección CORS para Cloudflare Workers en Producción)
 
 - **Corrección de Bloqueo de CORS para el Frontend PDV en Cloudflare Workers (`pos-wpcbajio.aaronarenasmartinez.workers.dev`)**:
   - **Causa Raíz**: Durante la remediación de seguridad previa, la eliminación de comodines permisivos (`*.workers.dev`) dejó fuera el origen de despliegue legítimo del PDV Cloudflare Worker (`https://pos-wpcbajio.aaronarenasmartinez.workers.dev`). Al realizar peticiones preflight OPTIONS a `https://api.wpcbajio.com/api/v1/...`, el backend ASP.NET Core respondía sin la cabecera `Access-Control-Allow-Origin`, provocando el bloqueo del navegador.

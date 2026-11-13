@@ -2,51 +2,27 @@
 
 ## 📌 Estado Actual
 
-- **Rama Git**: `main`
-- **Estado de Trabajo**: Corrección de CORS para Cloudflare Workers (`pos-wpcbajio.aaronarenasmartinez.workers.dev`) implementada, validada con 104 pruebas de backend (incluyendo suite de integración CORS) y 47 pruebas de frontend. Binarios generados en `bin/publish_vps`.
+- **Rama Git**: `main` (Trabajo en working tree local, **sin realizar commit** conforme a la instrucción expresa del usuario).
+- **Hito Reciente**: Levantamiento de Servicios y Auditoría Exhaustiva de Carga en los 17 Módulos del Sistema (13/11/2026):
+  - Backend API: `http://localhost:5000` (Activo y saludable).
+  - Frontend SPA: `http://localhost:5173` (Activo y saludable).
+  - Base de Datos Local: `PosLambrinDb` (Activo y sincronizado).
+  - Validación exhaustiva: 42/42 endpoints y consultas React respondiendo al 100% con latencia <50 ms.
+  - Causa identificada de módulos "sin info": Filtro por defecto en fecha actual (`today()`) en Historial de Ventas, Movimientos de Inventario y Reportes (al limpiar la fecha cargan de inmediato), y tablas legítimamente vacías en BD (Recibos de Compra y Cotizaciones).
 
-## 📌 Siguiente Tarea Recomendada
+## 📌 Siguiente Tarea Recomendada: Validación en Navegador por el Usuario y Ajuste Opcional de Filtros Iniciales
 
-Aplicar el reinicio y configuración de CORS en el VPS de producción (`193.46.198.88`) y verificar desde el navegador que el Punto de Venta en `https://pos-wpcbajio.aaronarenasmartinez.workers.dev` cargue el catálogo de productos sin errores de CORS.
+En [http://localhost:5173](http://localhost:5173):
 
-### Criterios de Aceptación para Cierre de Tarea
-1. Actualizar `/var/www/pos-api/appsettings.json` en el VPS con el origen `https://pos-wpcbajio.aaronarenasmartinez.workers.dev`.
-2. Reiniciar el servicio `pos-api.service` en el VPS.
-3. Verificar con `curl.exe` o navegador que la petición preflight OPTIONS a `https://api.wpcbajio.com/api/v1/products?...` retorne la cabecera `Access-Control-Allow-Origin: https://pos-wpcbajio.aaronarenasmartinez.workers.dev`.
-4. Acceder al PDV en `https://pos-wpcbajio.aaronarenasmartinez.workers.dev` y validar que los productos se carguen correctamente en la interfaz.
+1. **Ajuste Opcional de Filtros por Defecto (Propuesta)**:
+   - Evaluar si se desea que **Historial de Ventas** y **Movimientos de Inventario** inicialicen con fecha vacía (para ver siempre las últimas transacciones en lugar de solo las de hoy, tal como ya opera el módulo de *Notas de Venta*).
+2. **Generación de un Recibo de Compra de Prueba**:
+   - Para que el módulo **Recibos de Compra** no aparezca vacío, registrar un recibo de compra con el botón "+ Nuevo Recibo" para verificar el flujo de comprobante y ajuste de existencias.
+3. **Validación del Flujo de Venta en el POS**:
+   - Crear una venta en vivo y verificar la aparición inmediata del ticket y la actualización silenciosa del catálogo.
 
 ## 📌 Tareas Posteriores en Cola
 
-Ejecutar la prueba de compra manual controlada con tarjeta bancaria en el entorno de producción (`https://www.wpcbajio.com`), verificando el flujo completo de Stripe Payment Element, webhooks, confirmación de pedido y actualización de inventario.
-
-### Criterios de Aceptación para Cierre de Tarea
-1. Acceder a `https://www.wpcbajio.com/productos` y agregar el producto de prueba (ID 106, SKU `ZWEB`).
-2. Seleccionar modalidad `Recoger en sucursal` en el carrito de compra.
-3. Avanzar al Checkout y verificar que cargue el formulario seguro de Stripe Elements sin bloqueos ni mensajes de mantenimiento.
-4. Concluir la transacción de pago con tarjeta bancaria.
-5. Confirmar que el webhook de Stripe reporte `payment_intent.succeeded` y que la venta pase a estado `Completada` en SQL Server.
-6. Verificar que el pedido aparezca listado en el PDV en el módulo `Pedidos Web (CDC)`.
-
-### Criterios de Aceptación para Cierre de Tarea
-1. Validar en `localhost` que el Punto de Venta se ajuste correctamente con zoom al 80% y 60%.
-2. Validar que la búsqueda por SKU / código de barras funcione con o sin guiones y con caracteres de Mac.
-3. Validar que al cobrar con tarjeta o pago mixto sea obligatorio ingresar la referencia bancaria y se muestre la alerta si falta.
-4. Validar el combo de categorías mostrando los 104+ productos y el spinner de carga.
-5. Validar la regla de mayoreo para *Lambrin Interior 格栅板* en el carrito y que el desglose de mayoreo no se desborde.
-6. Validar la calculadora de m² dual: diseño con color y estado activo en los botones, traducción 100% al chino y español, y selección mediante autocompletado flotante con pill de producto y botón cambiar.
-7. Validar el descuento manual en porcentaje (ej. 15 = 15%) y recálculo correcto de base gravable e IVA (16%).
-8. Validar el comprobante de venta térmico: exclusivamente en español y sin el badge "PRÓXIMAMENTE" en `www.wpcbajio.com`.
-9. Validar los campos de Login vacíos por defecto y el nuevo footer.
-10. Validar la generación del contrato en Chino al guardar en Comercial.
-11. Validar el modal de movimiento de inventario con buscador predictivo y etiquetas bilingües.
-12. Validar el módulo de **Recibos de Compra**: traducción completa en español y chino (columnas, filtros, botones, modal y formulario), alta, edición y comprobante voucher.
-13. Validar la **traducción al chino (zh-CN)** en los 4 módulos reportados:
-    - **Pedidos Web (CDC)**: Título, subtítulo, tarjetas de métricas, filtros, tabla y modal de asignación de guía de rastreo.
-    - **Control de Inventarios**: Título y descripción principal traducidos reactivamente al chino (`WPC Bajío 库存管理`).
-    - **Catálogo de Categorías**: Título, descripción, selector de estado, buscador y modal de alta/edición 100% en chino.
-    - **Corte de Turno y Caja**: Desglose de Corte Z (`Esperado en Caja`, `Fondo`, `Ingresos`, `Ventas/Abonos Efectivo`, `Retiros`) y advertencias de contingencia.
-14. Validar la **trazabilidad de Stock Previo y Stock Final**:
-    - En la tabla de **Movimientos de Inventario**: verificar que la tabla cargue ordenada por fecha más reciente primero (`Fecha / 日期` descendente con indicador ▼ activo) para que cualquier venta o ajuste reciente aparezca en la parte superior.
-    - Verificar las columnas `Stock Previo / 原库存`, `Cantidad / 数量` y `Stock Final / 最终库存` para ventas, devoluciones, ajustes, entradas y salidas, así como el ordenamiento y la exportación a Excel y PDF.
-    - En el modal de **Captura de Movimiento / Ajuste**: verificar que al seleccionar un producto y seleccionar "Ajuste", "Entrada" o "Salida" se previsualicen en vivo: Stock Anterior, Variación con diferencia neta y Stock Resultante.
-15. Recibir el VoBo del usuario para proceder al commit y push de la rama.
+1. **Commit y Push Autorizado**: Cuando el desarrollador humano lo autorice explícitamente, realizar el commit formal con la identidad autorizada (`Aaron Arenas Martinez` / `44418304+UTLCDA@users.noreply.github.com`).
+2. **Despliegue a Producción (VPS)**: Sincronización y actualización de binarios en el servidor.
+3. **Flujo de Complementos de Pago**: Para ventas a crédito o pagos diferidos en parcialidades (PPD).

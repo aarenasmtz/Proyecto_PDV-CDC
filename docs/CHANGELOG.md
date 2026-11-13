@@ -2,6 +2,139 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.19.0] Optimización de Rendimiento en Carga de Catálogo PDV - 2026-11-09
+
+### Optimizado / Rendimiento
+- **Flujo Post-Venta Inmediato y Concurrencia en Base de Datos**:
+  - Eliminado el desmontaje del DOM por `setLoading(true)` al finalizar una venta en `PaginaPuntoVenta.tsx`, permitiendo que el ticket de venta (`SaleReceiptModal`) se abra de forma instantánea (<1s).
+  - Creación de `refreshStockAndSummary()` que corre en segundo plano de manera silenciosa, reduciendo las consultas posteriores de 5 endpoints masivos a solo 2 esenciales (`getProducts` para existencias + `getSalesSummary`), reduciendo la duración del refresco a ~93 ms.
+  - Optimización del connection pool de SQL Server con `Connect Timeout=30;Max Pool Size=200;MultipleActiveResultSets=True;` en `appsettings.json` y `appsettings.Development.json`.
+  - Timeout de peticiones en `apiClient.ts` extendido de 15s a 30s para evitar abortos prematuros de red.
+- **Rediseño del Stepper de Cantidad y Carrito en Punto de Venta**:
+  - Eliminación de reglas CSS en conflicto que rompían los bordes del input de cantidad en `PaginaPuntoVenta.css`.
+  - Creación de un control de cantidad segmentado tipo píldora (`.pos-quantity-control`) con borde definido (`#CFB9A5`), sombra sutil y botones `+` / `−` táctiles de alto contraste con feedback visual terracota (`#9C4D22`) al interactuar.
+  - Corrección de la tipografía y jerarquía visual del carrito: número de cantidad en `#3A2312` bold centrado, subtotal de partida destacado y botón de eliminar (`×`) circular con hover suave.
+- **Migración de Imágenes Base64 a Almacenamiento WebP en Disco**:
+  - Implementada rutina automática `MigrateBase64ImagesToDiskAsync` en `DbInitializer.cs`.
+  - Migradas 99 imágenes almacenadas como URIs Base64 completas en `Products.ImagenUrl` (~600 KB c/u, 31.2 MB en tabla) a archivos WebP multi-tamaño en disco (`C:\WPCBajioData\Products\{productId}\`).
+  - Reducción del payload de red de `/api/v1/products?...` de **8.5 MB** a **~15 KB** (reducción de ~560x).
+- **Proyección DTO Directa en Base de Datos (`CatalogApplicationService.cs`)**:
+  - Refactorizado `GetProductsAsync` para eliminar la consulta en dos fases y la carga de entidades completas en memoria con `OPENJSON`.
+  - Proyección SQL directa mediante `.Select(...)` que obtiene columnas escalares, categoría y subconsulta de stock disponible en un único viaje a la base de datos.
+  - Tiempo de respuesta del backend .NET 9 reducido de **2,924 ms** a **35 ms** (~83x de mejora).
+- **Resolución de Bloqueo TCP IPv6 en Vite Dev Server (`vite.config.ts`)**:
+  - Configurado `server.host: '::'` para escucha dual-stack IPv6/IPv4 (`[::]:5173` y `0.0.0.0:5173`).
+  - Eliminado el retraso de retransmisión SYN de Windows (~2.27s) al resolver `localhost` a `::1`.
+  - Proxy targets de Vite redirigidos directamente a `http://127.0.0.1:5000`.
+- **Métricas Globales**:
+  - Duración total de la petición de productos en DevTools reducida de **4.56 s** a **26 ms** (~175x de aceleración).
+- **Pruebas y Verificación**:
+  - Backend: 122/122 pruebas unitarias e integración aprobadas al 100%.
+  - Frontend: 53/53 pruebas unitarias aprobadas. Build de producción completado en 13.64s.
+
+## [2.18.0] Módulo Independiente: Notas de Venta Comerciales — WPC Bajío - 2026-11-08
+
+### Añadido / Implementado
+- **Generación de Notas de Venta en PDF (.NET 9 ASP.NET Core & QuestPDF 2024.12)**:
+  - Creación del servicio independiente `NotaVentaPdfService` y su interfaz `INotaVentaPdfService`.
+  - Documento oficial en formato Carta (216 × 279 mm) vertical con paleta corporativa (`#9C4D22`, `#833E1A`, `#6F3215`, `#FAF8F5`, `#FEF7EB`, `#F3E9DA`, `#3A2312`, `#7A6657`).
+  - Encabezado con logotipo corporativo (`logo_wpc_bajio.jpeg`), datos comerciales de WPC Bajío, recuadro de "NOTA DE VENTA / SIN EFECTOS FISCALES", folio y fecha.
+  - Bloque estructurado en 2 columnas: "DATOS DEL CLIENTE" y "ENTREGAR A / DESTINO" (modalidad, destinatario, dirección y contacto).
+  - Tabla dinámica de partidas comerciales con cálculo de piezas totales para cajas de lambrín (`Cantidad * PiezasPorCaja`), SKU, precios históricos e importes.
+  - Sello oficial de entrega (`✔ ESTADO: ENTREGADO` en verde o `⏳ ESTADO: PENDIENTE DE ENTREGA` en ámbar).
+  - Leyenda obligatoria: *"Documento comercial sin efectos fiscales. No sustituye un comprobante fiscal digital por Internet (CFDI)."*
+  - Totales históricos (subtotal, descuento, IVA únicamente si está registrado en la venta, total y estado de pago/saldo).
+  - Numeración dinámica de páginas ("Página X de Y").
+- **API REST (`NotasVentaController.cs` & `NotaVentaApplicationService.cs`)**:
+  - `GET /api/v1/notas-venta/ventas`: Consulta paginada (25 ítems) con filtros por folio, cliente, RFC, rango de fechas, estado de venta y estado de entrega.
+  - `GET /api/v1/notas-venta/ventas/{id}`: Detalle completo de la nota de venta.
+  - `GET /api/v1/notas-venta/ventas/{id}/pdf`: Genera y retorna el PDF con registro de auditoría en `IAuditLogService`.
+  - `POST /api/v1/notas-venta/ventas/{id}/confirmar-entrega`: Alterna o confirma el estado de entrega en `Notas` de la venta (`[ESTATUS: Entregado]`) con registro de auditoría.
+- **Frontend SPA (`NotasVentaPage.tsx` & `.css`, `servicioNotasVenta.ts`)**:
+  - Opción de navegación independiente en navbar `📋 Notas de Venta` (bilingüe Español y Chino `📋 销售单据`).
+  - Tarjetas de métricas: Total ventas, Entregadas en página, Pendientes de entrega y Monto acumulado en página.
+  - Tabla con 25 registros por página, badges visuales de entrega (`ENTREGADO` / `PENDIENTE`) y botones de acción rápida:
+    - `👁️ Vista previa`: Diálogo modal con visor de PDF integrado para revisar antes de imprimir.
+    - `📥 PDF`: Descarga directa con nombre sanitizado `NotaVenta_{folio}.pdf`.
+    - `🖨️ Imprimir`: Disparo de impresión directo en tamaño carta.
+    - `🚚 Entrega`: Diálogo modal para marcar como entregado o revertir a pendiente con notas de entrega opcionales.
+  - Integración en `SalesHistoryPage.tsx`: Botón directo `📋 Nota` para descarga en 1 clic.
+- **Pruebas y Verificación**:
+  - Backend: 122/122 pruebas unitarias e integración aprobadas al 100% (incluyendo 3 nuevas pruebas unitarias para `NotaVentaTests`).
+  - Frontend: 53/53 pruebas de Vitest aprobadas al 100%. Build de producción con Vite exitoso en 18.30s.
+
+### Añadido / Mejorado
+- **Formulario "+ Cliente" en Punto de Venta (`PaginaPuntoVenta.tsx`)**:
+  - Incorporación de campos fiscales dedicados: **RFC (Tax ID)** y **Código Postal (CP Fiscal)**.
+  - Validación de RFC en tiempo real conforme al estándar SAT (12 caracteres para personas morales y 13 para personas físicas, con conversión automática a mayúsculas).
+  - Validación de Código Postal a 5 dígitos numéricos con auto-resolución de ubicación (municipio/estado) mediante `lookupPostalCode`.
+  - Layout responsive de doble columna con estilos visuales consistentes, etiquetas claras de CFDI 4.0 y feedback inmediato al registrar.
+- **Selector de Cliente y Desglose de IVA en Caja**:
+  - El selector de clientes en POS ahora muestra los datos fiscales asociados (`RFC` y `CP`) directamente en las opciones de la lista desplegable.
+  - Al seleccionar un cliente se muestra una barra de información fiscal con su RFC y CP asignados.
+  - Al marcar `¿Desea facturar? (Aplicar 16% IVA)`, se despliega un banner informativo indicando el destino del CFDI 4.0 (RFC del cliente registrado o Público en General `XAXX010101000`) y se desglosa la línea explícita de `IVA (16%)` en el resumen del carrito.
+- **Armonización de Totales y Descuento en Backend (`Pos.Domain` y `Pos.Infrastructure`)**:
+  - `CatalogApplicationService`: Sincronización automática de `CodigoPostalFiscal = values.PostalCode` tanto en creación como en actualización de clientes.
+  - `Venta` y `Cotizacion`: Cálculo de subtotales, IVA y total sincronizado entre frontend y backend para contemplar la base imponible y descuentos de la venta.
+  - `FacturacionApplicationService`: Prorrateo automático y exacto a nivel centavos del descuento de la venta (`sale.MontoDescuento`) entre partidas al generar la vista previa e invocar el timbrado del CFDI 4.0.
+- **Pruebas y Verificación**:
+  - Backend: Compilación limpia con 0 errores y 119 pruebas unitarias aprobadas.
+  - Frontend: Build de producción con Vite exitoso en 17.86s y 51/51 pruebas de Vitest aprobadas al 100%.
+
+### Añadido / Implementado
+- **11 Tablas Relacionales e Índices en SQL Server (EF Core 9)**:
+  - Migración versionada `20261108052821_AddFacturacionModuleCompleto.cs`.
+  - Tablas creadas: `FacturacionConfiguracion`, `FacturacionReferenciaExterna`, `FacturacionFactura`, `FacturacionFacturaDetalle`, `FacturacionFacturaImpuesto`, `FacturacionFacturaVenta`, `FacturacionIntento`, `FacturacionDocumento`, `FacturacionCancelacion`, `FacturacionHistorialEstado`, `FacturacionLog`.
+  - Mapeo de precisión decimal estricta (`decimal(18,2)` para dinero y bases, `decimal(18,4)` para precios unitarios y cantidades, `decimal(18,6)` para tasas impositivas) e índices no agrupados optimizados por CorrelationId, Uuid, VentaId y fechas.
+- **Bitácora Técnica Exclusiva (`FacturacionLog` & `IFacturacionLogService`)**:
+  - Registro de llamadas HTTP en dos fases (Pre-llamada `Iniciada` y Post-llamada `Finalizada` / `Interrumpida` / `ResultadoIncierto`).
+  - Medición precisa de latencia en milisegundos (`DuracionMs`) y captura del código HTTP real recibido (`HttpStatusCode`) del proveedor.
+  - Regla estricta de cero códigos sintéticos: si ocurre un timeout o corte de red, `HttpStatusCode` queda en `NULL` sin inventar códigos locales.
+  - Manejo resiliente de timeouts: emisión fijada en `ResultadoPorConfirmar` sin arrojar 500 al usuario, permitiendo conciliación SAT sin duplicar timbres.
+- **Motor de Sanitización Criptográfica (`FacturacionSanitizer`)**:
+  - Enmascaramiento recursivo (`***REDACTED***`) de API keys, tenant keys, contraseñas, bearer tokens y certificados.
+  - Detección y exclusión de artefactos Base64 voluminosos (`[BASE64_DOCUMENT_DATA_EXCLUDED: length=X]`).
+  - Límite de seguridad de 16 KB en payloads JSON y trazas de error para prevenir agotamiento de almacenamiento.
+- **Endpoints de Diagnóstico y Purga en `FacturacionController`**:
+  - `GET /api/v1/facturacion/bitacora`: Paginación y filtrado multicriterio de llamadas técnicas.
+  - `GET /api/v1/facturacion/bitacora/{id}`: Detalle de registro individual.
+  - `GET /api/v1/facturacion/bitacora/relacionadas/{correlationId}`: Rastreo de la cadena de llamadas por CorrelationId.
+  - `POST /api/v1/facturacion/bitacora/purgar`: Purga técnica de registros antiguos con validación de retención mínima legal de 30 días, protegida con permiso `facturacion:bitacora_purgar`.
+- **Frontend Diagnóstico en `pos-web`**:
+  - Pestaña de navegación en `FacturacionPage.tsx` (`Facturas Emitidas` / `Bitácora Técnica FiscalAPI`).
+  - Componente `FacturacionBitacoraTab.tsx` con filtros dinámicos, métricas en tiempo real, latencia promedio y modal de purga.
+  - Modal `FacturacionLogDetalleModal.tsx` con visor de Request y Response JSON formateados con botón de copiado rápido, traza de excepción y visor de llamadas correlacionadas.
+  - Soporte i18n bilingüe completo (Español y Chino Simplificado `zh-CN`).
+- **Pruebas Automatizadas**:
+  - Backend: 119/119 pruebas unitarias e integración aprobadas al 100%.
+  - Frontend: 51/51 pruebas de Vitest aprobadas al 100%. Build de producción con Vite completado sin errores.
+
+## [2.15.0] Módulo de Facturación Electrónica CFDI 4.0 con FiscalAPI .NET SDK - 2026-11-08
+
+### Añadido / Implementado
+- **Integración con SDK Oficial de FiscalAPI (`Fiscalapi` v4.0.469)**:
+  - Soporte para emisión de CFDI 4.0 de ingreso (`I`), consulta de estado ante el SAT, cancelación de comprobantes con acuses y recuperación de documentos XML y PDF.
+  - Adaptador desacoplado `IFiscalApiClientAdapter` y opciones de configuración `FacturacionSettings` con validación estricta de arranque para ambientes QA (`test.fiscalapi.com`) y PR (`live.fiscalapi.com`).
+- **Persistencia y Base de Datos (SQL Server EF Core 9)**:
+  - Migración versionada `20261108041333_AddFacturacionModule`.
+  - Tablas: `IssuerConfigs` (configuración del emisor y control de folios consecutivos), `Invoices` (encabezado del comprobante fiscal), `InvoiceItems` (partidas y desglose de impuestos SAT) e `InvoiceStatusHistories` (historial auditado de transiciones de estado).
+  - Extensión a tablas `Customers` (RFC, razón social, régimen, código postal fiscal, uso de CFDI, correo de facturación) y `Products` (clave de producto/servicio SAT, clave de unidad SAT y objeto de impuesto SAT).
+- **Lógica de Negocio y Reglas Fiscales**:
+  - Bloqueo explícito de timbrado PUE para ventas con saldo pendiente (`SaldoPendiente > 0`) o apartados en proceso hasta liquidación total.
+  - Conciliación de montos e IVA: cálculo exacto de base imponible e impuesto trasladado para productos con IVA incluido o desglosado, respetando precios y descuentos originales de la venta.
+  - Idempotencia y reserva atómica: registro local en estado `EnProceso` con llave determinista previo a la llamada HTTP para evitar solicitudes duplicadas por peticiones simultáneas o doble clic.
+  - Manejo de fallas y timeouts de red fijando estado en `ResultadoPorConfirmar` para conciliación sin generar duplicados.
+  - Cancelación de facturas con motivos SAT 01 a 04, validación de UUID sustituto para motivo 01 y trazabilidad del acuse XML.
+- **Frontend y Experiencia de Usuario (`pos-web`)**:
+  - Módulo completo de Facturación en pestaña de navegación `🧾 Facturación` con soporte RBAC (`PermissionCodes.Invoicing`).
+  - Vistas y modales: `FacturaPreviewModal` (vista previa previa al timbrado con validación de receptor), `FacturaDetalleModal` (visor, descarga XML/PDF, consulta SAT y reenvío de correo), `FacturaCancelarModal` (motivos de cancelación SAT y UUID sustituto) y `ConfiguracionEmisorModal` (gestión fiscal del emisor y folios).
+  - Botón de acción `Facturar` integrado en el historial de ventas (`SalesHistoryPage.tsx`).
+  - Soporte bilingüe completo (Español y Chino Simplificado `zh-CN`).
+- **Pruebas Automatizadas y Documentación**:
+  - Suite de pruebas unitarias `FacturacionApplicationTests` cubriendo cálculo de impuestos, bloqueo de ventas a crédito, timbrado con FiscalAPI, rechazos, cancelación con sustitución, consulta SAT y validación de URLs QA/PR.
+  - 114/114 pruebas de backend y 47/47 pruebas de frontend aprobadas al 100%.
+  - Documentación de arquitectura y guías de puesta en marcha y transición a producción en `docs/FACTURACION_FISCALAPI.md`.
+
 ## [2.14.0] Corrección de Política CORS para Cloudflare Workers en Producción (PR) - 2026-10-07
 
 ### Corregido / Optimizado

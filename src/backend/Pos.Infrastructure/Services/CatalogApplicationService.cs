@@ -356,38 +356,94 @@ public class CatalogApplicationService : ICatalogApplicationService
         };
 
         var (skip, take) = QueryPaging.Normalize(page, pageSize, QueryPaging.DefaultStandardPageSize, QueryPaging.ExportMaxPageSize);
-        var pagedProductIds = await sortedQuery
+        var products = await sortedQuery
             .Skip(skip)
             .Take(take)
-            .Select(p => p.Id)
+            .Select(p => new
+            {
+                p.Id,
+                p.IdProducto,
+                p.Sku,
+                p.Barcode,
+                p.Nombre,
+                p.Descripcion,
+                p.CategoriaId,
+                CategoryName = p.Categoria != null ? p.Categoria.Nombre : string.Empty,
+                p.PrecioUnitario,
+                p.CostoUnitario,
+                p.PrecioMayoreo,
+                p.CantidadMinimaMayoreo,
+                p.UnidadMedida,
+                p.CoberturaPorUnidadM2,
+                p.ImagenUrl,
+                p.PiezasPorCaja,
+                p.CoberturaM2Caja,
+                p.LargoCm,
+                p.AltoCm,
+                p.AnchoCm,
+                p.CantidadInventarioInicial,
+                p.AnchoMm,
+                p.LargoMm,
+                p.EspesorMm,
+                p.Material,
+                p.Color,
+                p.SoloCotizacion,
+                p.VisibleMasVendido,
+                p.EstaActivo,
+                p.PrecioOnlineManual,
+                AvailableQuantity = _dbContext.Stocks
+                    .Where(s => s.ProductoId == p.Id)
+                    .Select(s => (decimal?)s.CantidadDisponible)
+                    .FirstOrDefault() ?? 0m
+            })
             .ToListAsync(cancellationToken);
 
-        if (pagedProductIds.Count == 0)
+        if (products.Count == 0)
         {
             return new PagedResult<ProductDto>([], totalItems, page, take);
         }
 
-        var products = await _dbContext.Products
-            .AsNoTracking()
-            .Where(p => pagedProductIds.Contains(p.Id))
-            .Include(p => p.Categoria)
-            .ToListAsync(cancellationToken);
-
-        var productsById = products.ToDictionary(p => p.Id);
-        var orderedProducts = pagedProductIds
-            .Where(id => productsById.ContainsKey(id))
-            .Select(id => productsById[id])
-            .ToList();
-
-        var stockByProduct = await _dbContext.Stocks
-            .Where(stock => pagedProductIds.Contains(stock.ProductoId))
-            .ToDictionaryAsync(stock => stock.ProductoId, stock => stock.CantidadDisponible, cancellationToken);
-
         var markupPercentage = await _pricingService.GetOnlineMarkupPercentageAsync(cancellationToken);
-        var dtos = orderedProducts.Select(product => MapProductToDto(
-            product,
-            stockByProduct.GetValueOrDefault(product.Id),
-            markupPercentage)).ToList();
+
+        var dtos = products.Select(p =>
+        {
+            var onlinePrice = _pricingService.CalculateOnlinePrice(p.PrecioUnitario, markupPercentage, p.PrecioOnlineManual);
+            return new ProductDto(
+                p.Id,
+                p.IdProducto,
+                p.Sku,
+                p.Barcode,
+                p.Nombre,
+                p.Descripcion,
+                p.CategoriaId,
+                p.CategoryName,
+                p.PrecioUnitario,
+                p.CostoUnitario,
+                p.PrecioMayoreo,
+                p.CantidadMinimaMayoreo,
+                p.UnidadMedida,
+                p.CoberturaPorUnidadM2,
+                p.ImagenUrl,
+                p.PiezasPorCaja,
+                p.CoberturaM2Caja,
+                p.LargoCm,
+                p.AltoCm,
+                p.AnchoCm,
+                p.CantidadInventarioInicial,
+                p.AnchoMm,
+                p.LargoMm,
+                p.EspesorMm,
+                p.Material,
+                p.Color,
+                p.SoloCotizacion,
+                p.VisibleMasVendido,
+                p.EstaActivo,
+                new List<string>(),
+                p.AvailableQuantity,
+                p.PrecioOnlineManual,
+                onlinePrice
+            );
+        }).ToList();
 
         return new PagedResult<ProductDto>(dtos, totalItems, page, take);
     }
@@ -872,6 +928,7 @@ public class CatalogApplicationService : ICatalogApplicationService
             Ciudad = values.City,
             Estado = values.State,
             CodigoPostal = values.PostalCode,
+            CodigoPostalFiscal = values.PostalCode,
             TipoCliente = values.CustomerType,
             PorcentajeDescuentoEspecial = values.Discount,
             LimiteCajasDiarias = request.DailyBoxLimit,
@@ -927,6 +984,7 @@ public class CatalogApplicationService : ICatalogApplicationService
         customer.Ciudad = values.City;
         customer.Estado = values.State;
         customer.CodigoPostal = values.PostalCode;
+        customer.CodigoPostalFiscal = values.PostalCode;
         customer.TipoCliente = values.CustomerType;
         customer.PorcentajeDescuentoEspecial = values.Discount;
         customer.LimiteCajasDiarias = request.DailyBoxLimit;
