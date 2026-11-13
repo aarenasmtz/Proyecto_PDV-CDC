@@ -1,6 +1,20 @@
 # CURRENT STATE — Estado Real del Sistema WPC Bajío
 
-## 🟢 ESTADO ACTUAL (13 de Noviembre, 2026 - Levantamiento de Servicios y Auditoría Exhaustiva de Carga en los 17 Módulos del Sistema)
+## 🟢 ESTADO ACTUAL (13 de Noviembre, 2026 - Pull Request #9 Creado y Servicios Activos)
+
+- **Creación y Publicación del Pull Request Oficial**:
+  - **Pull Request**: [#9 feat: Facturación Electrónica CFDI 4.0 con FiscalAPI, Notas de Venta y Optimización de Rendimiento en PDV](https://github.com/aarenasmtz/Proyecto_PDV-CDC/pull/9)
+  - **Rama Origen**: `feature/facturacion-cfdi-y-notas-de-venta`
+  - **Rama Destino**: `main`
+  - **Autor del Commit y PR**: `Aaron Arenas Martinez` (`44418304+UTLCDA@users.noreply.github.com`)
+  - **Commit**: `b5e1bad` (83 archivos modificados/creados, 18,611 inserciones).
+  - **Credenciales FiscalAPI**: Configuradas en ambiente QA conforme a instrucción (`https://test.fiscalapi.com`). Queda pendiente actualizar las claves a PR de producción al realizar el despliegue en el VPS.
+- **Servicios Locales Activos**:
+  - Backend API: `http://localhost:5000` (Activo en daemon)
+  - Frontend SPA: `http://localhost:5173` (Activo en daemon)
+  - Base de Datos: `PosLambrinDb` (Local sincronizado)
+
+## 🟢 ESTADO PREVIO (13 de Noviembre, 2026 - Levantamiento de Servicios y Auditoría Exhaustiva de Carga en los 17 Módulos del Sistema)
 
 - **Levantamiento y Verificación de Servicios Activos**:
   - **Backend API (`Pos.Api`)**: Activo y escuchando en `http://localhost:5000` (Proceso .NET 9).

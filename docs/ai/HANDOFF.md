@@ -1,3 +1,13 @@
+## 📌 Hito Cumplido: Creación y Publicación del Pull Request #9 (13 de Noviembre, 2026)
+- **Objetivo**: Preparar, comitear y publicar en GitHub el Pull Request oficial que integra los módulos de Facturación Electrónica CFDI 4.0 con FiscalAPI, Notas de Venta Comerciales y optimizaciones de rendimiento en PDV, manteniendo las claves de FiscalAPI en QA.
+- **Acciones Realizadas**:
+  1. Rama creada: `feature/facturacion-cfdi-y-notas-de-venta`.
+  2. Identidad Git autorizada verificada: `Aaron Arenas Martinez` (`44418304+UTLCDA@users.noreply.github.com`). Cero mención a cuentas externas o corporativas.
+  3. Commit realizado: `b5e1bad` (83 archivos, +18,611 líneas).
+  4. Rama publicada en remoto y Pull Request creado con GitHub CLI:
+     - **URL del PR**: [https://github.com/aarenasmtz/Proyecto_PDV-CDC/pull/9](https://github.com/aarenasmtz/Proyecto_PDV-CDC/pull/9)
+  5. Configuración de FiscalAPI mantenida en **QA** (`appsettings.json`), dejando como tarea pendiente el cambio a credenciales de producción (PR) durante el despliegue al servidor VPS.
+
 ## 📌 Hito Cumplido: Levantamiento de Servicios y Auditoría Exhaustiva de Carga en los 17 Módulos del Sistema (13 de Noviembre, 2026)
 - **Objetivo**: Levantar los servicios de Backend y Frontend tras reinicio del entorno, y auditar por qué algunos módulos reportaban no mostrar información tras la última implementación.
 - **Acciones Realizadas**:

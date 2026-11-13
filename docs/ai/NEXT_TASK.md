@@ -2,24 +2,32 @@
 
 ## 📌 Estado Actual
 
-- **Rama Git**: `main` (Trabajo en working tree local, **sin realizar commit** conforme a la instrucción expresa del usuario).
-- **Hito Reciente**: Levantamiento de Servicios y Auditoría Exhaustiva de Carga en los 17 Módulos del Sistema (13/11/2026):
-  - Backend API: `http://localhost:5000` (Activo y saludable).
-  - Frontend SPA: `http://localhost:5173` (Activo y saludable).
-  - Base de Datos Local: `PosLambrinDb` (Activo y sincronizado).
-  - Validación exhaustiva: 42/42 endpoints y consultas React respondiendo al 100% con latencia <50 ms.
-  - Causa identificada de módulos "sin info": Filtro por defecto en fecha actual (`today()`) en Historial de Ventas, Movimientos de Inventario y Reportes (al limpiar la fecha cargan de inmediato), y tablas legítimamente vacías en BD (Recibos de Compra y Cotizaciones).
+- **Rama Git**: `feature/facturacion-cfdi-y-notas-de-venta`
+- **Pull Request Activo**: [#9 en GitHub](https://github.com/aarenasmtz/Proyecto_PDV-CDC/pull/9)
+- **Hito Reciente**: PR publicado formalmente conteniendo:
+  - Facturación Electrónica CFDI 4.0 con FiscalAPI (QA).
+  - Notas de Venta comerciales en PDF tamaño Carta (QuestPDF).
+  - Optimización de rendimiento en PDV (4.56s a 26ms).
+  - Apertura instantánea de ticket post-venta (<1s) y stepper segmentado en carrito.
+- **Servicios Activos**:
+  - Backend API: `http://localhost:5000` (Activo y saludable)
+  - Frontend SPA: `http://localhost:5173` (Activo y saludable)
+  - Base de Datos: `PosLambrinDb` (Local sincronizado)
 
-## 📌 Siguiente Tarea Recomendada: Validación en Navegador por el Usuario y Ajuste Opcional de Filtros Iniciales
+## 📌 Siguiente Tarea Recomendada: Revisión y Fusión del PR #9 y Despliegue a Producción (VPS)
 
-En [http://localhost:5173](http://localhost:5173):
-
-1. **Ajuste Opcional de Filtros por Defecto (Propuesta)**:
-   - Evaluar si se desea que **Historial de Ventas** y **Movimientos de Inventario** inicialicen con fecha vacía (para ver siempre las últimas transacciones en lugar de solo las de hoy, tal como ya opera el módulo de *Notas de Venta*).
-2. **Generación de un Recibo de Compra de Prueba**:
-   - Para que el módulo **Recibos de Compra** no aparezca vacío, registrar un recibo de compra con el botón "+ Nuevo Recibo" para verificar el flujo de comprobante y ajuste de existencias.
-3. **Validación del Flujo de Venta en el POS**:
-   - Crear una venta en vivo y verificar la aparición inmediata del ticket y la actualización silenciosa del catálogo.
+1. **Revisión y Aprobación del PR #9**:
+   - Validar en GitHub: [https://github.com/aarenasmtz/Proyecto_PDV-CDC/pull/9](https://github.com/aarenasmtz/Proyecto_PDV-CDC/pull/9).
+   - Realizar la fusión (merge) hacia la rama `main`.
+2. **Despliegue a Producción (VPS)**:
+   - Sincronizar la rama `main` en el servidor VPS de Hostinger.
+   - Aplicar la migración de Entity Framework Core `AddFacturacionModuleCompleto` en la base de datos de producción.
+   - **Cambio de Credenciales FiscalAPI**: Sustituir las llaves de QA por las llaves de Producción (PR) en `appsettings.Production.json`:
+     - `ApiUrl: "https://api.fiscalapi.com"`
+     - `ApiKey: <clave_produccion_fiscalapi>`
+     - `Tenant: <tenant_produccion_fiscalapi>`
+     - `Facturacion.Ambiente: "Produccion"`
+   - Compilar y reiniciar los servicios `kestrel-pos` y `pos-web` en producción.
 
 ## 📌 Tareas Posteriores en Cola
 
