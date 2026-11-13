@@ -1,3 +1,20 @@
+## 📌 Hito Cumplido: Despliegue en Vivo a Producción en VPS Cloud y Cloudflare Workers (13 de Noviembre, 2026)
+- **Objetivo**: Recompilar y desplegar los cambios más recientes para que se reflejen de inmediato en el servidor VPS de producción y en la CDN Edge de Cloudflare.
+- **Acciones Realizadas**:
+  1. **Backend API en Servidor VPS (`193.46.198.88`)**:
+     - Compilado en modo Release (`dotnet publish -c Release`).
+     - Transferido por SCP y desplegado en `/var/www/pos-api/`.
+     - Ajustados permisos `www-data:www-data` y reiniciado el servicio `pos-api.service`.
+     - Migración `AddFacturacionModuleCompleto` aplicada automáticamente por EF Core en la BD de producción.
+     - 99 imágenes Base64 migradas a WebP en `/var/wpcbajio/data/products`.
+     - Verificado en vivo respondiendo `200 OK` en `https://api.wpcbajio.com/api/v1/health`.
+  2. **Frontend SPA en Cloudflare Workers**:
+     - Compilado con Vite (`npm run build`).
+     - Desplegado con Wrangler a Cloudflare Workers Assets (`pos-wpcbajio`).
+     - Verificado en vivo respondiendo `200 OK` en `https://pos-wpcbajio.aaronarenasmartinez.workers.dev`.
+  3. **Credenciales FiscalAPI**:
+     - Mantenidas en modo QA (`https://test.fiscalapi.com`) como se solicitó expresamente.
+
 ## 📌 Hito Cumplido: Creación y Publicación del Pull Request #9 (13 de Noviembre, 2026)
 - **Objetivo**: Preparar, comitear y publicar en GitHub el Pull Request oficial que integra los módulos de Facturación Electrónica CFDI 4.0 con FiscalAPI, Notas de Venta Comerciales y optimizaciones de rendimiento en PDV, manteniendo las claves de FiscalAPI en QA.
 - **Acciones Realizadas**:
