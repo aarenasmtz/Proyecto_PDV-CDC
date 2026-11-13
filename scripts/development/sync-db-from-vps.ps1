@@ -6,7 +6,8 @@ param(
     [string]$VpsHost = "193.46.198.88",
     [string]$VpsUser = "root",
     [string]$TargetDb = "PosLambrinDb",
-    [switch]$AlsoRestoreDevCopy = $true
+    [switch]$AlsoRestoreDevCopy = $true,
+    [switch]$SkipDownload = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,8 +19,9 @@ if (!(Test-Path $BackupDir)) {
     New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
 }
 
-Write-Host "`n>>> [1/4] Generando respaldo en VPS ($VpsHost)..." -ForegroundColor Cyan
-$remoteScript = @'
+if (-not $SkipDownload) {
+    Write-Host "`n>>> [1/4] Generando respaldo en VPS ($VpsHost)..." -ForegroundColor Cyan
+    $remoteScript = @'
 if [ -x /usr/local/bin/backup-pos-db.sh ]; then
     /usr/local/bin/backup-pos-db.sh
 else
@@ -33,17 +35,37 @@ EOF
 fi
 '@
 
-ssh -o StrictHostKeyChecking=no "$VpsUser@$VpsHost" $remoteScript
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Error generando respaldo en el VPS."
-    exit 1
+    ssh -o StrictHostKeyChecking=no "$VpsUser@$VpsHost" $remoteScript
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Error generando respaldo en el VPS."
+        exit 1
+    }
+
+    Write-Host "`n>>> [2/4] Descargando respaldo a local ($LocalBakPath)..." -ForegroundColor Cyan
+    scp -o StrictHostKeyChecking=no "$VpsUser@${VpsHost}:/tmp/PosLambrinDb_Prod.bak" $LocalBakPath
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Error descargando archivo .bak por SCP."
+        exit 1
+    }
+} else {
+    Write-Host "`n>>> [1-2/4] Omitiendo descarga remota (usando archivo local existente: $LocalBakPath)..." -ForegroundColor Yellow
+    if (!(Test-Path $LocalBakPath)) {
+        Write-Error "No se encontro el archivo $LocalBakPath. Ejecute sin -SkipDownload."
+        exit 1
+    }
 }
 
-Write-Host "`n>>> [2/4] Descargando respaldo a local ($LocalBakPath)..." -ForegroundColor Cyan
-scp -o StrictHostKeyChecking=no "$VpsUser@${VpsHost}:/tmp/PosLambrinDb_Prod.bak" $LocalBakPath
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Error descargando archivo .bak por SCP."
-    exit 1
+# Verificar servicio SQL Server local
+$sqlService = Get-Service MSSQLSERVER -ErrorAction SilentlyContinue
+if ($sqlService -and $sqlService.Status -ne "Running") {
+    Write-Host "`n[AVISO] El servicio SQL Server (MSSQLSERVER) esta detenido. Intentando iniciar..." -ForegroundColor Yellow
+    try {
+        Start-Service MSSQLSERVER -ErrorAction Stop
+        Write-Host "[OK] Servicio MSSQLSERVER iniciado correctamente." -ForegroundColor Green
+    } catch {
+        Write-Warning "No se pudo iniciar MSSQLSERVER automaticamente (requiere permisos de Administrador): $_"
+        Write-Warning "Por favor, ejecute en una terminal de PowerShell como Administrador: Start-Service MSSQLSERVER"
+    }
 }
 
 Write-Host "`n>>> [3/4] Restaurando base de datos '$TargetDb' en SQL Server local..." -ForegroundColor Cyan

@@ -64,6 +64,18 @@ public static class PermissionCodes
         public const string Administer = "usuarios:administrar";
     }
 
+    public static class Invoicing
+    {
+        public const string View = "facturacion:ver";
+        public const string Issue = "facturacion:emitir";
+        public const string Download = "facturacion:descargar";
+        public const string SendEmail = "facturacion:enviar_correo";
+        public const string Cancel = "facturacion:cancelar";
+        public const string AdminConfig = "facturacion:configurar";
+        public const string ViewLogs = "facturacion:bitacora_ver";
+        public const string PurgeLogs = "facturacion:bitacora_purgar";
+    }
+
     public static class Cdc
     {
         public const string CatalogImagesAdmin = "CDC_CATALOGO_IMAGENES_ADMIN";
@@ -100,6 +112,14 @@ public static class PermissionCodes
         Reports.SalesView,
         Reports.InventoryView,
         Users.Administer,
+        Invoicing.View,
+        Invoicing.Issue,
+        Invoicing.Download,
+        Invoicing.SendEmail,
+        Invoicing.Cancel,
+        Invoicing.AdminConfig,
+        Invoicing.ViewLogs,
+        Invoicing.PurgeLogs,
         Cdc.CatalogImagesAdmin,
         Cdc.StandardCatalogImagesAdmin
     ];

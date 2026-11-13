@@ -149,6 +149,9 @@ namespace Pos.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("CodigoPostalFiscal")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Direccion")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -157,6 +160,9 @@ namespace Pos.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("EmailFacturacion")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("EstaActivo")
                         .HasColumnType("bit");
@@ -170,6 +176,9 @@ namespace Pos.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("FechaCreacionUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("FiscalapiPersonId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("LimiteCajasDiarias")
                         .HasPrecision(18, 2)
@@ -193,6 +202,12 @@ namespace Pos.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("RazonSocialFiscal")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RegimenFiscal")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Rfc")
                         .HasMaxLength(13)
                         .HasColumnType("nvarchar(13)");
@@ -203,6 +218,9 @@ namespace Pos.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("TipoCliente")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UsoCfdi")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -506,6 +524,1014 @@ namespace Pos.Infrastructure.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Stocks");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionCancelacion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AcuseXml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CodigoEstadoHttp")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DetallesRespuesta")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EsCancelableSat")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("EstadoSat")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EstatusCancelacionSat")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("Exitoso")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("FacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaEfectivaCancelacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaSolicitudUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MensajeRespuesta")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MotivoCancelacion")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UuidSustitucion")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("FacturaId");
+
+                    b.ToTable("FacturacionCancelacion", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionConfiguracion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Ambiente")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CodigoPostalExpedicion")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CsdCertificadoNumero")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Empresa")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("EmpresaId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EstaListoParaEmitir")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FiscalapiIssuerId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FiscalapiPersonId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("FolioSiguiente")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Notas")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("RazonSocial")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("RegimenFiscal")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Rfc")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
+
+                    b.Property<string>("Serie")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Sucursal")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SucursalId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("UsuarioModificoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Rfc", "Ambiente");
+
+                    b.HasIndex("EmpresaId", "SucursalId", "Ambiente");
+
+                    b.ToTable("FacturacionConfiguracion", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionDocumento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContenidoBase64")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("FacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MimeType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("NombreArchivo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("RutaAlmacenamientoPrivada")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Sha256Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("TamanoBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("TipoDocumento")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Sha256Hash");
+
+                    b.HasIndex("FacturaId", "TipoDocumento");
+
+                    b.ToTable("FacturacionDocumento", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFactura", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AcuseCancelacionXml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Ambiente")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int?>("CodigoEstadoHttp")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CodigoPostalExpedicion")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CodigoPostalReceptor")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CondicionesDePago")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Descuento")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("DetallesRespuesta")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmailReceptor")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("EsCancelableSat")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("EstadoCancelacionSat")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EstadoSat")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Exportacion")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaCancelacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaEmisionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaSolicitudCancelacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaTimbradoUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FiscalapiInvoiceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Folio")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FolioVenta")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FormaPago")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int?>("IdVenta")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("MensajeRespuesta")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MetodoPago")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Moneda")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("MotivoCancelacion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PdfRuta")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RazonSocialEmisor")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("RazonSocialReceptor")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("RegimenFiscalEmisor")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("RegimenFiscalReceptor")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("RfcEmisor")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
+
+                    b.Property<string>("RfcReceptor")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)");
+
+                    b.Property<string>("Serie")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TipoCambio")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("TipoComprobante")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalImpuestosRetenidos")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalImpuestosTrasladados")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TraceIdentifier")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("UsoCfdi")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Uuid")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UuidSustitucion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("VentaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("XmlContenido")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Estado");
+
+                    b.HasIndex("IdempotencyKey");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.HasIndex("Uuid");
+
+                    b.HasIndex("VentaId");
+
+                    b.HasIndex("Ambiente", "FechaEmisionUtc");
+
+                    b.HasIndex("RfcReceptor", "FechaEmisionUtc");
+
+                    b.ToTable("FacturacionFactura", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFacturaDetalle", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BaseIva")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("Cantidad")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("ClaveProdServ")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ClaveUnidad")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("Descuento")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("FacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("FacturacionFacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Importe")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ImporteIva")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<int>("NumeroPartida")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ObjetoImp")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<Guid?>("ProductoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Sku")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("TasaOcuotaIva")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<string>("Unidad")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal>("ValorUnitario")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FacturacionFacturaId");
+
+                    b.HasIndex("ProductoId");
+
+                    b.HasIndex("FacturaId", "NumeroPartida");
+
+                    b.ToTable("FacturacionFacturaDetalle", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFacturaImpuesto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Base")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("FacturaDetalleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Importe")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("Impuesto")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("TasaOCuota")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("TipoFactor")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FacturaDetalleId", "Tipo", "Impuesto");
+
+                    b.ToTable("FacturacionFacturaImpuesto", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFacturaVenta", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("FacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaAsociacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FolioVenta")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("IdVenta")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MontoAsociado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("VentaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VentaId");
+
+                    b.HasIndex("FacturaId", "VentaId");
+
+                    b.ToTable("FacturacionFacturaVenta", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionHistorialEstado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Detalle")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("EstadoAnterior")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("EstadoNuevo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("FacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FacturaId", "FechaCreacionUtc");
+
+                    b.ToTable("FacturacionHistorialEstado", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionIntento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Ambiente")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DetalleError")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("FacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaFinUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaInicioUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("HttpStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Mensaje")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("NumeroEnvio")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NumeroRevision")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequestSanitizadoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponseSanitizadoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Resultado")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("VentaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("IdempotencyKey");
+
+                    b.HasIndex("FacturaId", "FechaInicioUtc");
+
+                    b.HasIndex("VentaId", "FechaInicioUtc");
+
+                    b.ToTable("FacturacionIntento", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Ambiente")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DetalleError")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long?>("DuracionMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("EmpresaId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("EstadoEjecucion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("FacturaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaFinUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaInicioUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("HttpStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("IdentificadorExterno")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid?>("IntentoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Mensaje")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("MetodoHttp")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int>("NumeroReintento")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Operacion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Origen")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Proveedor")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("ProviderHttpStatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RequestSanitizadoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponseSanitizadoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Ruta")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("StackTraceSanitizado")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool?>("Succeeded")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SucursalId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TipoExcepcion")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TraceIdentifierProveedor")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid?>("UsuarioId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UuidFiscal")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid?>("VentaId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("VersionAplicacion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("IdempotencyKey");
+
+                    b.HasIndex("IntentoId");
+
+                    b.HasIndex("TraceIdentifierProveedor");
+
+                    b.HasIndex("UuidFiscal");
+
+                    b.HasIndex("VentaId");
+
+                    b.HasIndex("Ambiente", "FechaInicioUtc");
+
+                    b.HasIndex("FacturaId", "FechaInicioUtc");
+
+                    b.HasIndex("Resultado", "FechaInicioUtc");
+
+                    b.ToTable("FacturacionLog", (string)null);
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionReferenciaExterna", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Ambiente")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("DetallesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("EntidadLocalId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("EstaActivo")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("FechaActualizacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacionUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IdentificadorExterno")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Tenant")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("TipoEntidad")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdentificadorExterno", "Ambiente");
+
+                    b.HasIndex("TipoEntidad", "EntidadLocalId", "Ambiente")
+                        .IsUnique();
+
+                    b.ToTable("FacturacionReferenciaExterna", (string)null);
                 });
 
             modelBuilder.Entity("Pos.Domain.Entidades.ImagenProducto", b =>
@@ -862,6 +1888,14 @@ namespace Pos.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("CategoriaId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("ClaveProdServSat")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ClaveUnidadSat")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<decimal>("CoberturaM2Caja")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -894,6 +1928,9 @@ namespace Pos.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("FechaCreacionUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("FiscalapiProductId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("IdProducto")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
@@ -921,6 +1958,10 @@ namespace Pos.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("ObjetoImpuestoSat")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("PiezasPorCaja")
                         .HasColumnType("int");
 
@@ -943,6 +1984,10 @@ namespace Pos.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("SoloCotizacion")
                         .HasColumnType("bit");
+
+                    b.Property<decimal>("TasaIva")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("UnidadMedida")
                         .IsRequired()
@@ -1513,6 +2558,118 @@ namespace Pos.Infrastructure.Persistence.Migrations
                     b.Navigation("Producto");
                 });
 
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionCancelacion", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFactura", "Factura")
+                        .WithMany("Cancelaciones")
+                        .HasForeignKey("FacturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Factura");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionDocumento", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFactura", "Factura")
+                        .WithMany("Documentos")
+                        .HasForeignKey("FacturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Factura");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFactura", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Pos.Domain.Entidades.Venta", "Venta")
+                        .WithMany()
+                        .HasForeignKey("VentaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Usuario");
+
+                    b.Navigation("Venta");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFacturaDetalle", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFactura", "Factura")
+                        .WithMany("Detalles")
+                        .HasForeignKey("FacturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFactura", null)
+                        .WithMany("Partidas")
+                        .HasForeignKey("FacturacionFacturaId");
+
+                    b.HasOne("Pos.Domain.Entidades.Producto", "Producto")
+                        .WithMany()
+                        .HasForeignKey("ProductoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Factura");
+
+                    b.Navigation("Producto");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFacturaImpuesto", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFacturaDetalle", "FacturaDetalle")
+                        .WithMany("Impuestos")
+                        .HasForeignKey("FacturaDetalleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FacturaDetalle");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFacturaVenta", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFactura", "Factura")
+                        .WithMany("VentasAsociadas")
+                        .HasForeignKey("FacturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Pos.Domain.Entidades.Venta", "Venta")
+                        .WithMany()
+                        .HasForeignKey("VentaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Factura");
+
+                    b.Navigation("Venta");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionHistorialEstado", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFactura", "Factura")
+                        .WithMany("HistorialEstados")
+                        .HasForeignKey("FacturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Factura");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionIntento", b =>
+                {
+                    b.HasOne("Pos.Domain.Entidades.FacturacionFactura", "Factura")
+                        .WithMany("Intentos")
+                        .HasForeignKey("FacturaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Factura");
+                });
+
             modelBuilder.Entity("Pos.Domain.Entidades.ImagenProducto", b =>
                 {
                     b.HasOne("Pos.Domain.Entidades.Producto", "Producto")
@@ -1733,6 +2890,28 @@ namespace Pos.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Pos.Domain.Entidades.DevolucionCabecera", b =>
                 {
                     b.Navigation("Detalle");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFactura", b =>
+                {
+                    b.Navigation("Cancelaciones");
+
+                    b.Navigation("Detalles");
+
+                    b.Navigation("Documentos");
+
+                    b.Navigation("HistorialEstados");
+
+                    b.Navigation("Intentos");
+
+                    b.Navigation("Partidas");
+
+                    b.Navigation("VentasAsociadas");
+                });
+
+            modelBuilder.Entity("Pos.Domain.Entidades.FacturacionFacturaDetalle", b =>
+                {
+                    b.Navigation("Impuestos");
                 });
 
             modelBuilder.Entity("Pos.Domain.Entidades.Permiso", b =>

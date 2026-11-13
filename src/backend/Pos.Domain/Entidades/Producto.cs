@@ -37,6 +37,13 @@ public class Producto : EntidadBase
     public bool SoloCotizacion { get; set; } = false;
     public bool VisibleMasVendido { get; set; } = false;
 
+    // Configuración Fiscal SAT para CFDI 4.0
+    public string ClaveProdServSat { get; set; } = "30161801"; // Paneles de pared
+    public string ClaveUnidadSat { get; set; } = "H87"; // Pieza
+    public string ObjetoImpuestoSat { get; set; } = "02"; // Sí objeto de impuesto
+    public decimal TasaIva { get; set; } = 0.1600m;
+    public string? FiscalapiProductId { get; set; }
+
     public Categoria Categoria { get; set; } = null!;
     public ICollection<ImagenProducto> Imagenes { get; set; } = new List<ImagenProducto>();
 }

@@ -15,6 +15,7 @@ node_modules/
 dist/
 coverage/
 .vite/
+.wrangler/
 .env.local
 .env.development.local
 .env.test.local
@@ -50,6 +51,11 @@ dist_vps_api/
 backups/
 *.bak
 
+# Certificados y llaves criptográficas (FiscalAPI / SAT / SSL)
+certs_pruebas_sat/
+*.key
+*.cer
+*.pfx
 
 *.pdf
 src/backend/Pos.Api/data/

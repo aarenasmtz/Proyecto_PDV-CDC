@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Pos.Application.Common.Interfaces;
 using Pos.Application.Common.Security;
 using Pos.Domain.Common;
@@ -49,7 +50,13 @@ public static class DbInitializer
             ("comercial", "contratos", "Administrar plantillas de contratos"),
             ("reportes", "ver_ventas", "Ver reportes ejecutivos de venta"),
             ("reportes", "ver_inventario", "Ver reportes de inventario"),
-            ("usuarios", "administrar", "Administrar usuarios y permisos")
+            ("usuarios", "administrar", "Administrar usuarios y permisos"),
+            ("facturacion", "ver", "Consultar facturas emitidas y estado fiscal"),
+            ("facturacion", "emitir", "Emitir y timbrar facturas CFDI 4.0"),
+            ("facturacion", "descargar", "Descargar representaciones impresas PDF y XML"),
+            ("facturacion", "enviar_correo", "Enviar facturas por correo electrónico"),
+            ("facturacion", "cancelar", "Solicitar cancelación de facturas ante el SAT"),
+            ("facturacion", "configurar", "Administrar configuración fiscal del emisor")
         };
 
         var entidadesPermiso = new List<Permiso>();
@@ -201,5 +208,45 @@ public static class DbInitializer
         }
 
         await context.SaveChangesAsync();
+    }
+
+    public static async Task MigrateBase64ImagesToDiskAsync(
+        PosDbContext context,
+        IProductImageStorageService imageStorage,
+        Microsoft.Extensions.Logging.ILogger logger)
+    {
+        var productsWithBase64 = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
+            .ToListAsync(context.Products.Where(p => p.ImagenUrl.StartsWith("data:image")));
+
+        if (productsWithBase64.Count == 0)
+        {
+            return;
+        }
+
+        logger.LogInformation("Iniciando migración de {Count} imágenes Base64 de productos a disco WebP...", productsWithBase64.Count);
+
+        int migrated = 0;
+        foreach (var product in productsWithBase64)
+        {
+            try
+            {
+                var result = await imageStorage.MigrateBase64ImageAsync(product.Id, product.ImagenUrl);
+                if (result != null && !string.IsNullOrWhiteSpace(result.PosUrl))
+                {
+                    product.ImagenUrl = result.PosUrl;
+                    migrated++;
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "No fue posible migrar imagen para producto {ProductId} (SKU: {Sku}).", product.Id, product.Sku);
+            }
+        }
+
+        if (migrated > 0)
+        {
+            await context.SaveChangesAsync();
+            logger.LogInformation("Migración completada exitosamente: {Migrated}/{Total} imágenes convertidas a WebP.", migrated, productsWithBase64.Count);
+        }
     }
 }

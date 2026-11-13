@@ -35,7 +35,7 @@ public class Venta : EntidadBase
     {
         SubTotal = Partidas.Sum(p => p.PrecioTotal);
         MontoIva = Math.Round(SubTotal * tasaIva, 2);
-        MontoTotal = Math.Max(0, SubTotal - MontoDescuento + MontoIva);
+        MontoTotal = Math.Max(0m, SubTotal - MontoDescuento + MontoIva);
 
         if (TipoPago == SalePaymentTypes.AdvanceDeposit)
         {

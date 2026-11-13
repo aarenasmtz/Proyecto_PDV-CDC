@@ -8,17 +8,17 @@ export default defineConfig({
     chunkSizeWarningLimit: 1400
   },
   server: {
-    host: '0.0.0.0',
+    host: '::',
     port: 5173,
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
         secure: false
       },
       '/products': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
         secure: false,
         bypass(req) {
@@ -28,7 +28,7 @@ export default defineConfig({
         }
       },
       '/categories': {
-        target: 'http://localhost:5000',
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
         secure: false,
         bypass(req) {

@@ -21,6 +21,14 @@ public class Cliente : EntidadBase
     public string Notas { get; set; } = string.Empty;
     public string? PasswordHash { get; set; } = "WPC123";
 
+    // Datos fiscales para Facturación CFDI 4.0
+    public string? RazonSocialFiscal { get; set; }
+    public string? CodigoPostalFiscal { get; set; }
+    public string? RegimenFiscal { get; set; }
+    public string? UsoCfdi { get; set; }
+    public string? EmailFacturacion { get; set; }
+    public string? FiscalapiPersonId { get; set; }
+
     public string NombreMostrar => string.IsNullOrWhiteSpace(NombreEmpresa)
         ? $"{Nombre} {Apellido}"
         : $"{NombreEmpresa} ({Nombre} {Apellido})";
