@@ -665,7 +665,8 @@ export const PaginaPuntoVenta: React.FC = () => {
     try {
       setProcessing(true);
       setNotice(null);
-      const baseNotes = notes.trim() || t('defaultSaleNote', { coverage: coverage.toFixed(2) });
+      const defaultNote = `Venta de mostrador. Cobertura estimada: ${coverage.toFixed(2)} m².`;
+      const baseNotes = notes.trim() || defaultNote;
       const finalNotes = bankReference.trim() ? `${baseNotes} | Ref: ${bankReference.trim()}` : baseNotes;
 
       const sale = await servicioVentas.procesarVenta({

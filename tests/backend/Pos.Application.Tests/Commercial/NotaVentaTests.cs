@@ -210,4 +210,48 @@ public class NotaVentaTests
         var header = System.Text.Encoding.ASCII.GetString(bytes.Take(4).ToArray());
         Assert.Equal("%PDF", header);
     }
+
+    [Theory]
+    [InlineData("柜台销售。预计覆盖面积：1.16 m²。", "Venta de mostrador. Cobertura estimada: 1.16 m².")]
+    [InlineData("柜台销售。预计覆盖面积：0.15 m²。", "Venta de mostrador. Cobertura estimada: 0.15 m².")]
+    [InlineData("柜台销售。预计覆盖面积：0.00 m²。 | [CANCELADA]: Prueba con matias en local", "Venta de mostrador. Cobertura estimada: 0.00 m². | (Cancelada: Prueba con matias en local)")]
+    [InlineData("Venta de mostrador. Cobertura estimada: 0.58 m².", "Venta de mostrador. Cobertura estimada: 0.58 m².")]
+    [InlineData("[ESTATUS: Entregado] | [GUIA: 789456] | [E-COMMERCE] | Entrega inmediata", "Entrega inmediata")]
+    [InlineData(null, "")]
+    [InlineData("", "")]
+    public void NormalizarObservacionesComerciales_NormalizesCorrectly(string? input, string expected)
+    {
+        var result = NotaVentaApplicationService.NormalizarObservacionesComerciales(input);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task GetNotaVentaByFolioAsync_NormalizesChineseNotesToSpanish()
+    {
+        using var context = CreateInMemoryContext();
+        var audit = new FakeAuditLogService();
+        var service = new NotaVentaApplicationService(context, audit);
+
+        var venta = new Venta
+        {
+            Id = Guid.NewGuid(),
+            IdVenta = 22,
+            NumeroFolio = "VENTA-20261022-95FF80BE96504",
+            SubTotal = 316m,
+            MontoTotal = 316m,
+            Estado = SaleStatuses.Completed,
+            Notas = "柜台销售。预计覆盖面积：1.16 m²。",
+            FechaCreacionUtc = DateTime.UtcNow
+        };
+
+        context.Sales.Add(venta);
+        await context.SaveChangesAsync();
+
+        var nota = await service.GetNotaVentaByFolioAsync(22);
+
+        Assert.NotNull(nota);
+        Assert.Equal("Venta de mostrador. Cobertura estimada: 1.16 m².", nota.ObservacionesComerciales);
+        Assert.DoesNotContain("?", nota.ObservacionesComerciales);
+        Assert.DoesNotContain("柜台销售", nota.ObservacionesComerciales);
+    }
 }

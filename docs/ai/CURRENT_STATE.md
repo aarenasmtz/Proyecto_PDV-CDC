@@ -1,5 +1,29 @@
 # CURRENT STATE — Estado Real del Sistema WPC Bajío
 
+## 🟢 ESTADO ACTUAL (19 de Noviembre, 2026 - Corrección de Glifos '?' en Observaciones de Notas de Venta PDF y Despliegue en Vivo)
+
+- **Corrección de Glifos '?' (`????????????1.16 m²?`) en PDF de Notas de Venta**:
+  - **Causa Raíz Identificada**:
+    - Al operar el PDV con el idioma Chino Simplificado (`zh`), el texto predeterminado de venta en mostrador se generaba como `柜台销售。预计覆盖面积：{{coverage}} m²。` (12 caracteres chinos + 1 punto final chino `。`).
+    - Al generar el documento PDF con QuestPDF usando fuente `Arial` (tanto en Windows como en el VPS Linux), SkiaSharp no encontraba glifos para dichos caracteres CJK y los reemplazaba por el carácter sustituto `?`, resultando en `????????????1.16 m²?`.
+  - **Solución Implementada**:
+    1. **Backend (`NotaVentaApplicationService.cs`)**:
+       - Implementado método de sanitización y normalización `NormalizarObservacionesComerciales(string? notas)`.
+       - Mapeo automático de notas por defecto chinas a español oficial comercial: `柜台销售。预计覆盖面积：X m²。` -> `Venta de mostrador. Cobertura estimada: X m².`.
+       - Traducción de términos comerciales y puntuación china (`。` -> `.`, `：` -> `:`, `，` -> `,`) a estándares legibles.
+       - Sanitización de cualquier ideograma CJK residual para evitar caracteres de reemplazo `?` en SkiaSharp.
+       - Limpieza de etiquetas técnicas internas (`[ESTATUS: ...]`, `[GUIA: ...]`, `[E-COMMERCE]`, `[CANCELADA]`).
+    2. **Frontend (`PaginaPuntoVenta.tsx` & `i18n/index.ts`)**:
+       - Se garantizó que la nota por defecto guardada en base de datos al realizar ventas en mostrador sea siempre en español comercial (`Venta de mostrador. Cobertura estimada: ${coverage.toFixed(2)} m².`), independientemente del idioma seleccionado en la interfaz del cajero.
+    3. **Base de Datos VPS (`PosLambrinDb`)**:
+       - Actualizadas las 6 ventas históricas (1, 2, 3, 12, 21, 22) que tenían la nota en chino a su formato normalizado en español.
+    4. **Pruebas y Verificación**:
+       - Añadidas pruebas unitarias en `NotaVentaTests.cs` (11 pruebas pasadas al 100%).
+       - 53 pruebas de frontend en Vitest pasadas al 100%.
+       - Solución completa compilada con 0 errores.
+       - Backend desplegado en VPS (`193.46.198.88`) y servicio `pos-api` reiniciado.
+       - Frontend desplegado con Wrangler a Cloudflare Workers (`https://pos-wpcbajio.aaronarenasmartinez.workers.dev`).
+
 ## 🟢 ESTADO ACTUAL (13 de Noviembre, 2026 - Despliegue Exitoso a Producción: Backend en VPS y Frontend en Cloudflare Workers)
 
 - **Despliegue a Producción (VPS + Cloudflare Edge CDN) 100% OPERATIVO**:

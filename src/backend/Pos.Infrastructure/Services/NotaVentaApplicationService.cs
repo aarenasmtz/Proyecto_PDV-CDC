@@ -402,11 +402,8 @@ public class NotaVentaApplicationService : INotaVentaService
             SaldoPendiente: sale.SaldoPendiente
         );
 
-        // Limpieza de notas para observaciones
-        var cleanNotas = Regex.Replace(sale.Notas, @"\[ESTATUS:\s*[^\]]+\]", "").Trim();
-        cleanNotas = Regex.Replace(cleanNotas, @"\[GUIA:\s*[^\]]+\]", "").Trim();
-        cleanNotas = Regex.Replace(cleanNotas, @"\[E-COMMERCE\]", "").Trim();
-        cleanNotas = cleanNotas.Trim('|', ' ').Trim();
+        // Limpieza y normalización de notas para observaciones comerciales
+        var cleanNotas = NormalizarObservacionesComerciales(sale.Notas);
 
         var empresaDto = new EmpresaComercialConfigDto(
             NombreComercial: "WPC BAJÍO",
@@ -443,5 +440,67 @@ public class NotaVentaApplicationService : INotaVentaService
             CondicionesVenta: condiciones,
             Empresa: empresaDto
         );
+    }
+
+    /// <summary>
+    /// Normaliza y sanea las observaciones comerciales para la Nota de Venta (PDF).
+    /// Elimina etiquetas técnicas/internas, traduce leyendas de mostrador generadas en chino por i18n
+    /// y sanitiza caracteres CJK no renderizables para evitar símbolos '?' en el documento PDF.
+    /// </summary>
+    public static string NormalizarObservacionesComerciales(string? notas)
+    {
+        if (string.IsNullOrWhiteSpace(notas))
+        {
+            return string.Empty;
+        }
+
+        // 1. Limpieza de etiquetas técnicas y de sistema
+        var clean = Regex.Replace(notas, @"\[ESTATUS:\s*[^\]]+\]", "", RegexOptions.IgnoreCase).Trim();
+        clean = Regex.Replace(clean, @"\[GUIA:\s*[^\]]+\]", "", RegexOptions.IgnoreCase).Trim();
+        clean = Regex.Replace(clean, @"\[E-COMMERCE\]", "", RegexOptions.IgnoreCase).Trim();
+        clean = Regex.Replace(clean, @"\[ENTREGA_NOTAS:\s*[^\]]+\]", "", RegexOptions.IgnoreCase).Trim();
+        clean = Regex.Replace(clean, @"\[CANCELADA\]:\s*([^|]+)", "(Cancelada: $1)", RegexOptions.IgnoreCase).Trim();
+
+        // 2. Normalización de notas por defecto generadas en chino por el selector de idioma (i18n)
+        // Ejemplo: "柜台销售。预计覆盖面积：1.16 m²。" -> "Venta de mostrador. Cobertura estimada: 1.16 m²."
+        clean = Regex.Replace(clean, @"柜台销售[。.]?\s*预计覆盖面积[：:]\s*([0-9.,]+)\s*(?:m²|m2)?([。.]?)", "Venta de mostrador. Cobertura estimada: $1 m².");
+        clean = clean.Replace("柜台销售", "Venta de mostrador")
+                     .Replace("预计覆盖面积", "Cobertura estimada")
+                     .Replace("覆蓋面積", "Cobertura estimada")
+                     .Replace("送货到门", "Entrega a domicilio")
+                     .Replace("送货", "Entrega")
+                     .Replace("自提", "Recoger en tienda")
+                     .Replace("已付", "Pagado")
+                     .Replace("未付", "Pendiente")
+                     .Replace("定金", "Anticipo")
+                     .Replace("订金", "Anticipo")
+                     .Replace("现金", "Efectivo")
+                     .Replace("刷卡", "Tarjeta")
+                     .Replace("转账", "Transferencia")
+                     .Replace("安装", "Instalación")
+                     .Replace("加急", "Urgente");
+
+        // 3. Normalización de puntuación china y caracteres de ancho completo
+        clean = clean.Replace("。", ".")
+                     .Replace("：", ": ")
+                     .Replace("，", ", ")
+                     .Replace("；", "; ")
+                     .Replace("！", "! ")
+                     .Replace("？", "? ")
+                     .Replace("（", " (")
+                     .Replace("）", ") ")
+                     .Replace("【", " [")
+                     .Replace("】", "] ");
+
+        // 4. Limpieza de cualquier ideograma CJK residual para evitar '?' en SkiaSharp / QuestPDF
+        clean = Regex.Replace(clean, @"\p{IsCJKUnifiedIdeographs}+", "").Trim();
+
+        // 5. Normalización de barras delimitadoras y espacios
+        clean = Regex.Replace(clean, @"\s*\|\s*", " | ");
+        clean = Regex.Replace(clean, @"(\s*\|\s*)+", " | ");
+        clean = clean.Trim(' ', '|', ',', ';', '-').Trim();
+        clean = Regex.Replace(clean, @"\s{2,}", " ");
+
+        return clean;
     }
 }

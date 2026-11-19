@@ -1109,7 +1109,7 @@ const resources = {
       mixedPaymentMismatch: '各付款方式合计必须等于 {{total}}。',
       customerRequiredForDeposit: '登记订金或预留销售时必须选择客户。',
       invalidDepositAmount: '订金必须大于零且小于 {{total}}。',
-      defaultSaleNote: '柜台销售。预计覆盖面积：{{coverage}} m²。',
+      defaultSaleNote: 'Venta de mostrador. Cobertura estimada: {{coverage}} m².',
       saleCompleted: '销售 #{{idVenta}} 已成功登记。',
       saleNumber: '销售 #{{idVenta}}',
       saleProcessError: '无法完成销售。',

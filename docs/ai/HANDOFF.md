@@ -1,4 +1,20 @@
-## 📌 Hito Cumplido: Despliegue en Vivo a Producción en VPS Cloud y Cloudflare Workers (13 de Noviembre, 2026)
+## 📌 Hito Cumplido: Corrección de Glifos '?' en PDF de Notas de Venta y Despliegue en VPS + Cloudflare (19 de Noviembre, 2026)
+- **Objetivo**: Corregir los símbolos de interrogación `????????????1.16 m²?` que aparecían en el recuadro "OBSERVACIONES / CONDICIONES COMERCIALES" de las Notas de Venta en formato PDF.
+- **Acciones Realizadas**:
+  1. **Diagnóstico**: Se identificó que las ventas generadas con la interfaz en Chino guardaban la nota por defecto `柜台销售。预计覆盖面积：{{coverage}} m²。`. La fuente Arial utilizada por QuestPDF no incluye glifos CJK, por lo que SkiaSharp renderizaba cada carácter como `?`.
+  2. **Backend**:
+     - Creado `NormalizarObservacionesComerciales` en `NotaVentaApplicationService.cs` para traducir y normalizar notas chinas a español (`Venta de mostrador. Cobertura estimada: X m².`), convertir signos de puntuación y filtrar etiquetas técnicas.
+  3. **Frontend**:
+     - En `PaginaPuntoVenta.tsx`, se fijó que la nota por defecto generada al guardar la venta en BD sea siempre en español comercial estándar.
+     - En `i18n/index.ts`, se ajustó la clave de recurso `defaultSaleNote` para chino.
+  4. **Base de Datos VPS**:
+     - Se actualizaron las ventas históricas afectadas en `PosLambrinDb` del VPS.
+  5. **Despliegue**:
+     - Backend desplegado en VPS Ubuntu `193.46.198.88` (`systemctl restart pos-api`).
+     - Frontend desplegado en Cloudflare Workers (`pos-wpcbajio`).
+  6. **Pruebas**: 11/11 pruebas backend en `NotaVentaTests` y 53/53 pruebas frontend en Vitest aprobadas al 100%.
+
+
 - **Objetivo**: Recompilar y desplegar los cambios más recientes para que se reflejen de inmediato en el servidor VPS de producción y en la CDN Edge de Cloudflare.
 - **Acciones Realizadas**:
   1. **Backend API en Servidor VPS (`193.46.198.88`)**:
