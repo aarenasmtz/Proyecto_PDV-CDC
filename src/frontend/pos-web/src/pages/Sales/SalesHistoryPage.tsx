@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { servicioCatalogo } from '../../services/servicioCatalogo';
 import { servicioVentas } from '../../services/servicioVentas';
+import { servicioNotasVenta } from '../../services/servicioNotasVenta';
 import { Cliente } from '../../types/tiposCatalogo';
 import { ResumenVentas, Venta } from '../../types/tiposVentas';
 import ExportButtons from '../../components/export/ExportButtons';
@@ -14,6 +15,7 @@ import { useTableSort } from '../../hooks/useTableSort';
 import { SortableTh } from '../../components/common/SortableTh';
 import { usePagination } from '../../hooks/usePagination';
 import TablePagination from '../../components/common/TablePagination';
+import FacturaPreviewModal from '../Facturacion/FacturaPreviewModal';
 import './SalesHistoryPage.css';
 
 const today = getOperationalDateInputValue;
@@ -22,6 +24,7 @@ export const SalesHistoryPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { hasPermission } = useAuth();
   const canCancelSale = hasPermission('ventas', 'cancelar');
+  const canIssueInvoice = hasPermission('facturacion', 'emitir') || hasPermission('facturacion', 'ver');
 
   const [sales, setSales] = useState<Venta[]>([]);
   const [customers, setCustomers] = useState<Cliente[]>([]);
@@ -41,6 +44,7 @@ export const SalesHistoryPage: React.FC = () => {
   const [cancelSaleTarget, setCancelSaleTarget] = useState<Venta | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const [facturarSaleTarget, setFacturarSaleTarget] = useState<Venta | null>(null);
 
   const locale = i18n.language.startsWith('zh') ? 'zh-CN' : 'es-MX';
   const money = useMemo(() => new Intl.NumberFormat(locale, { style: 'currency', currency: 'MXN' }), [locale]);
@@ -265,6 +269,26 @@ export const SalesHistoryPage: React.FC = () => {
                   <td>{safeFormat(sale.pendingBalance)}</td>
                   <td>
                     <button className="pos-link-btn" onClick={() => setReceipt(sale)}>👁️ {t('viewReceipt')}</button>
+                    <button
+                      type="button"
+                      className="pos-link-btn"
+                      style={{ color: '#833E1A', marginLeft: '0.6rem' }}
+                      onClick={() => servicioNotasVenta.descargarPdf(sale.id, sale.folioNumber || `V-${sale.idVenta}`)}
+                      title="Descargar Nota de Venta comercial en PDF (Sin efectos fiscales)"
+                    >
+                      📋 Nota
+                    </button>
+                    {canIssueInvoice && sale.status !== 'Cancelada' && sale.status !== 'Cancelled' && sale.status !== 'Devuelta' && (
+                      <button
+                        type="button"
+                        className="pos-link-btn"
+                        style={{ color: 'var(--primary-main)', marginLeft: '0.6rem' }}
+                        onClick={() => setFacturarSaleTarget(sale)}
+                        title="Emitir CFDI 4.0 para esta venta"
+                      >
+                        🧾 {t('navInvoicing')}
+                      </button>
+                    )}
                     {canCancelSale && sale.status !== 'Cancelada' && sale.status !== 'Cancelled' && sale.status !== 'Devuelta' && (
                       <button
                         type="button"
@@ -335,6 +359,18 @@ export const SalesHistoryPage: React.FC = () => {
           </form>
         </div>
       </div>
+    )}
+
+    {facturarSaleTarget && (
+      <FacturaPreviewModal
+        saleId={facturarSaleTarget.id}
+        idVenta={facturarSaleTarget.idVenta}
+        onClose={() => setFacturarSaleTarget(null)}
+        onSuccess={() => {
+          setFacturarSaleTarget(null);
+          loadSales();
+        }}
+      />
     )}
   </section>;
 };

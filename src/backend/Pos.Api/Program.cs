@@ -270,6 +270,9 @@ using (var scope = app.Services.CreateScope())
             .FirstOrDefaultAsync();
 
         await DbInitializer.SeedAsync(context, passwordHasher);
+
+        var imageStorage = scope.ServiceProvider.GetRequiredService<IProductImageStorageService>();
+        await DbInitializer.MigrateBase64ImagesToDiskAsync(context, imageStorage, app.Logger);
     }
     catch (Exception ex)
     {

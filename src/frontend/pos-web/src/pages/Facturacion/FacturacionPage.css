@@ -1,0 +1,324 @@
+.facturacion-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.facturacion-header {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.facturacion-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.facturacion-header h2 {
+  margin: 0;
+}
+
+.facturacion-header p {
+  margin: 0.25rem 0 0;
+  color: var(--text-secondary);
+}
+
+.facturacion-env-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.facturacion-env-badge--qa {
+  background: rgba(255, 193, 7, 0.15);
+  color: #b27b00;
+  border: 1px solid #ffc107;
+}
+
+.facturacion-env-badge--pr {
+  background: rgba(40, 167, 69, 0.15);
+  color: #1e7e34;
+  border: 1px solid #28a745;
+}
+
+.facturacion-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.facturacion-filter-form > input {
+  flex: 1 1 220px;
+}
+
+.facturacion-filter-form > select {
+  flex: 1 1 160px;
+}
+
+.facturacion-filter-form > button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+
+.facturacion-date-field {
+  display: inline-flex;
+  flex: 0 1 155px;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 145px;
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.facturacion-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.facturacion-metrics article {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.facturacion-metrics span {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.facturacion-metrics strong {
+  color: var(--primary-main);
+  font-size: 1.35rem;
+}
+
+.facturacion-table-wrap {
+  overflow-x: auto;
+}
+
+.facturacion-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.facturacion-table th {
+  padding: 0.75rem;
+  text-align: left;
+  color: var(--text-main);
+  background: var(--background-container);
+  white-space: nowrap;
+}
+
+.facturacion-table td {
+  padding: 0.75rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.facturacion-table tbody tr:hover {
+  background: var(--background-cream-soft);
+}
+
+.facturacion-actions-cell {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.facturacion-btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  transition: background 0.15s ease;
+}
+
+.facturacion-btn-icon:hover {
+  background: var(--background-container);
+}
+
+.facturacion-btn-icon:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.facturacion-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.facturacion-tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 0.75rem 1.25rem;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.facturacion-tabs button:hover {
+  color: var(--text-main);
+}
+
+.facturacion-tabs button.is-active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+  background: var(--background-selected);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+@media (max-width: 900px) {
+  .facturacion-filter-form {
+    width: 100%;
+  }
+  .facturacion-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .facturacion-header__top {
+    flex-direction: column;
+  }
+  .facturacion-filter-form > input,
+  .facturacion-filter-form > select,
+  .facturacion-date-field,
+  .facturacion-filter-form > button {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Modales Flotantes / Overlays (Bitácora Técnica y Facturación)
+   ========================================================================== */
+
+.modal-backdrop,
+.pos-receipt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--overlay-strong, rgba(15, 23, 42, 0.72));
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  overflow-y: auto;
+  animation: facturacionFadeIn 0.2s ease-out;
+}
+
+@keyframes facturacionFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal,
+.pos-customer-modal {
+  position: relative;
+  background: var(--background-surface, #ffffff);
+  color: var(--text-main, #1e293b);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: var(--radius-lg, 12px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 10px 15px -3px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto;
+  animation: facturacionSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal.modal-lg {
+  max-width: 950px;
+}
+
+@keyframes facturacionSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle, #e2e8f0);
+  background: var(--background-container, #f8fafc);
+  flex-shrink: 0;
+}
+
+.modal-header h2,
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-main, #1e293b);
+}
+
+.modal-header .close-btn,
+.pos-receipt-close {
+  background: transparent;
+  border: none;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--text-secondary, #64748b);
+  cursor: pointer;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.modal-header .close-btn:hover,
+.pos-receipt-close:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-main, #0f172a);
+}
+
+.modal-body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--border-subtle, #e2e8f0);
+  background: var(--background-container, #f8fafc);
+  flex-shrink: 0;
+}
+
+

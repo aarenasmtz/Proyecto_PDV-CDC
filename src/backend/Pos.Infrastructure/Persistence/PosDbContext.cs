@@ -35,6 +35,25 @@ public class PosDbContext : DbContext
     public DbSet<ConfiguracionSistema> SystemSettings { get; set; } = null!;
     public DbSet<ReciboCompra> PurchaseReceipts { get; set; } = null!;
 
+    // Módulo Oficial de Facturación Electrónica CFDI 4.0 (11 Tablas)
+    public DbSet<FacturacionConfiguracion> FacturacionConfiguraciones { get; set; } = null!;
+    public DbSet<FacturacionReferenciaExterna> FacturacionReferenciasExternas { get; set; } = null!;
+    public DbSet<FacturacionFactura> FacturacionFacturas { get; set; } = null!;
+    public DbSet<FacturacionFacturaDetalle> FacturacionFacturaDetalles { get; set; } = null!;
+    public DbSet<FacturacionFacturaImpuesto> FacturacionFacturaImpuestos { get; set; } = null!;
+    public DbSet<FacturacionFacturaVenta> FacturacionFacturaVentas { get; set; } = null!;
+    public DbSet<FacturacionIntento> FacturacionIntentos { get; set; } = null!;
+    public DbSet<FacturacionDocumento> FacturacionDocumentos { get; set; } = null!;
+    public DbSet<FacturacionCancelacion> FacturacionCancelaciones { get; set; } = null!;
+    public DbSet<FacturacionHistorialEstado> FacturacionHistorialEstados { get; set; } = null!;
+    public DbSet<FacturacionLog> FacturacionLogs { get; set; } = null!;
+
+    // Aliases convenientes para compatibilidad
+    public DbSet<FacturacionConfiguracion> IssuerConfigs => FacturacionConfiguraciones;
+    public DbSet<FacturacionFactura> Invoices => FacturacionFacturas;
+    public DbSet<FacturacionFacturaDetalle> InvoiceItems => FacturacionFacturaDetalles;
+    public DbSet<FacturacionHistorialEstado> InvoiceStatusHistories => FacturacionHistorialEstados;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -233,6 +252,254 @@ public class PosDbContext : DbContext
             .HasForeignKey(r => r.UsuarioId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Configuración de Facturación Electrónica CFDI 4.0 (11 Tablas Oficiales)
+        modelBuilder.Entity<FacturacionConfiguracion>(entity =>
+        {
+            entity.ToTable("FacturacionConfiguracion");
+            entity.Property(c => c.EmpresaId).HasMaxLength(50);
+            entity.Property(c => c.Empresa).HasMaxLength(150);
+            entity.Property(c => c.SucursalId).HasMaxLength(50);
+            entity.Property(c => c.Sucursal).HasMaxLength(150);
+            entity.Property(c => c.Ambiente).HasMaxLength(10);
+            entity.Property(c => c.Rfc).HasMaxLength(13);
+            entity.Property(c => c.RazonSocial).HasMaxLength(300);
+            entity.Property(c => c.RegimenFiscal).HasMaxLength(10);
+            entity.Property(c => c.CodigoPostalExpedicion).HasMaxLength(10);
+            entity.Property(c => c.Serie).HasMaxLength(20);
+            entity.Property(c => c.FiscalapiIssuerId).HasMaxLength(100);
+            entity.Property(c => c.CsdCertificadoNumero).HasMaxLength(50);
+            entity.Property(c => c.Notas).HasMaxLength(500);
+
+            entity.HasIndex(c => new { c.EmpresaId, c.SucursalId, c.Ambiente });
+            entity.HasIndex(c => new { c.Rfc, c.Ambiente });
+        });
+
+        modelBuilder.Entity<FacturacionReferenciaExterna>(entity =>
+        {
+            entity.ToTable("FacturacionReferenciaExterna");
+            entity.Property(r => r.TipoEntidad).HasMaxLength(50);
+            entity.Property(r => r.Ambiente).HasMaxLength(10);
+            entity.Property(r => r.IdentificadorExterno).HasMaxLength(150);
+            entity.Property(r => r.Tenant).HasMaxLength(150);
+
+            entity.HasIndex(r => new { r.TipoEntidad, r.EntidadLocalId, r.Ambiente }).IsUnique();
+            entity.HasIndex(r => new { r.IdentificadorExterno, r.Ambiente });
+        });
+
+        modelBuilder.Entity<FacturacionFactura>(entity =>
+        {
+            entity.ToTable("FacturacionFactura");
+            entity.Property(f => f.Ambiente).HasMaxLength(10);
+            entity.Property(f => f.Serie).HasMaxLength(20);
+            entity.Property(f => f.Folio).HasMaxLength(50);
+            entity.Property(f => f.FolioVenta).HasMaxLength(50);
+            entity.Property(f => f.Estado).HasMaxLength(50);
+            entity.Property(f => f.EstadoSat).HasMaxLength(50);
+            entity.Property(f => f.EstadoCancelacionSat).HasMaxLength(100);
+            entity.Property(f => f.EsCancelableSat).HasMaxLength(50);
+            entity.Property(f => f.FiscalapiInvoiceId).HasMaxLength(100);
+            entity.Property(f => f.Uuid).HasMaxLength(50);
+            entity.Property(f => f.RfcEmisor).HasMaxLength(13);
+            entity.Property(f => f.RazonSocialEmisor).HasMaxLength(300);
+            entity.Property(f => f.RegimenFiscalEmisor).HasMaxLength(10);
+            entity.Property(f => f.CodigoPostalExpedicion).HasMaxLength(10);
+            entity.Property(f => f.RfcReceptor).HasMaxLength(13);
+            entity.Property(f => f.RazonSocialReceptor).HasMaxLength(300);
+            entity.Property(f => f.CodigoPostalReceptor).HasMaxLength(10);
+            entity.Property(f => f.RegimenFiscalReceptor).HasMaxLength(10);
+            entity.Property(f => f.UsoCfdi).HasMaxLength(10);
+            entity.Property(f => f.EmailReceptor).HasMaxLength(200);
+            entity.Property(f => f.Moneda).HasMaxLength(10);
+            entity.Property(f => f.FormaPago).HasMaxLength(10);
+            entity.Property(f => f.MetodoPago).HasMaxLength(10);
+            entity.Property(f => f.TipoComprobante).HasMaxLength(5);
+            entity.Property(f => f.Exportacion).HasMaxLength(10);
+            entity.Property(f => f.CondicionesDePago).HasMaxLength(200);
+            entity.Property(f => f.IdempotencyKey).HasMaxLength(150);
+            entity.Property(f => f.TraceIdentifier).HasMaxLength(150);
+            entity.Property(f => f.MensajeRespuesta).HasMaxLength(1000);
+
+            entity.HasIndex(f => f.Uuid);
+            entity.HasIndex(f => f.IdempotencyKey);
+            entity.HasIndex(f => f.Estado);
+            entity.HasIndex(f => new { f.Ambiente, f.FechaEmisionUtc });
+            entity.HasIndex(f => new { f.RfcReceptor, f.FechaEmisionUtc });
+
+            entity.HasOne(f => f.Venta)
+                .WithMany()
+                .HasForeignKey(f => f.VentaId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(f => f.Usuario)
+                .WithMany()
+                .HasForeignKey(f => f.UsuarioId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<FacturacionFacturaDetalle>(entity =>
+        {
+            entity.ToTable("FacturacionFacturaDetalle");
+            entity.Property(p => p.ClaveProdServ).HasMaxLength(20);
+            entity.Property(p => p.ClaveUnidad).HasMaxLength(20);
+            entity.Property(p => p.Unidad).HasMaxLength(50);
+            entity.Property(p => p.Descripcion).HasMaxLength(1000);
+            entity.Property(p => p.Sku).HasMaxLength(100);
+            entity.Property(p => p.ObjetoImp).HasMaxLength(10);
+
+            entity.HasIndex(p => new { p.FacturaId, p.NumeroPartida });
+
+            entity.HasOne(p => p.Factura)
+                .WithMany(f => f.Detalles)
+                .HasForeignKey(p => p.FacturaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(p => p.Producto)
+                .WithMany()
+                .HasForeignKey(p => p.ProductoId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<FacturacionFacturaImpuesto>(entity =>
+        {
+            entity.ToTable("FacturacionFacturaImpuesto");
+            entity.Property(i => i.Tipo).HasMaxLength(20);
+            entity.Property(i => i.Impuesto).HasMaxLength(10);
+            entity.Property(i => i.TipoFactor).HasMaxLength(20);
+
+            entity.HasIndex(i => new { i.FacturaDetalleId, i.Tipo, i.Impuesto });
+
+            entity.HasOne(i => i.FacturaDetalle)
+                .WithMany(d => d.Impuestos)
+                .HasForeignKey(i => i.FacturaDetalleId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FacturacionFacturaVenta>(entity =>
+        {
+            entity.ToTable("FacturacionFacturaVenta");
+            entity.Property(v => v.FolioVenta).HasMaxLength(50);
+
+            entity.HasIndex(v => new { v.FacturaId, v.VentaId });
+            entity.HasIndex(v => v.VentaId);
+
+            entity.HasOne(v => v.Factura)
+                .WithMany(f => f.VentasAsociadas)
+                .HasForeignKey(v => v.FacturaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(v => v.Venta)
+                .WithMany()
+                .HasForeignKey(v => v.VentaId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<FacturacionIntento>(entity =>
+        {
+            entity.ToTable("FacturacionIntento");
+            entity.Property(i => i.CorrelationId).HasMaxLength(100);
+            entity.Property(i => i.Ambiente).HasMaxLength(10);
+            entity.Property(i => i.IdempotencyKey).HasMaxLength(150);
+            entity.Property(i => i.Estado).HasMaxLength(50);
+            entity.Property(i => i.Resultado).HasMaxLength(50);
+            entity.Property(i => i.Mensaje).HasMaxLength(1000);
+
+            entity.HasIndex(i => i.IdempotencyKey);
+            entity.HasIndex(i => i.CorrelationId);
+            entity.HasIndex(i => new { i.FacturaId, i.FechaInicioUtc });
+            entity.HasIndex(i => new { i.VentaId, i.FechaInicioUtc });
+
+            entity.HasOne(i => i.Factura)
+                .WithMany(f => f.Intentos)
+                .HasForeignKey(i => i.FacturaId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<FacturacionDocumento>(entity =>
+        {
+            entity.ToTable("FacturacionDocumento");
+            entity.Property(d => d.TipoDocumento).HasMaxLength(30);
+            entity.Property(d => d.NombreArchivo).HasMaxLength(255);
+            entity.Property(d => d.MimeType).HasMaxLength(100);
+            entity.Property(d => d.Sha256Hash).HasMaxLength(64);
+            entity.Property(d => d.RutaAlmacenamientoPrivada).HasMaxLength(500);
+
+            entity.HasIndex(d => new { d.FacturaId, d.TipoDocumento });
+            entity.HasIndex(d => d.Sha256Hash);
+
+            entity.HasOne(d => d.Factura)
+                .WithMany(f => f.Documentos)
+                .HasForeignKey(d => d.FacturaId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FacturacionCancelacion>(entity =>
+        {
+            entity.ToTable("FacturacionCancelacion");
+            entity.Property(c => c.CorrelationId).HasMaxLength(100);
+            entity.Property(c => c.MotivoCancelacion).HasMaxLength(5);
+            entity.Property(c => c.UuidSustitucion).HasMaxLength(50);
+            entity.Property(c => c.EstadoSat).HasMaxLength(100);
+            entity.Property(c => c.EsCancelableSat).HasMaxLength(100);
+            entity.Property(c => c.EstatusCancelacionSat).HasMaxLength(100);
+            entity.Property(c => c.MensajeRespuesta).HasMaxLength(1000);
+
+            entity.HasIndex(c => c.FacturaId);
+            entity.HasIndex(c => c.CorrelationId);
+
+            entity.HasOne(c => c.Factura)
+                .WithMany(f => f.Cancelaciones)
+                .HasForeignKey(c => c.FacturaId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FacturacionHistorialEstado>(entity =>
+        {
+            entity.ToTable("FacturacionHistorialEstado");
+            entity.Property(h => h.EstadoAnterior).HasMaxLength(50);
+            entity.Property(h => h.EstadoNuevo).HasMaxLength(50);
+            entity.Property(h => h.Detalle).HasMaxLength(1000);
+
+            entity.HasIndex(h => new { h.FacturaId, h.FechaCreacionUtc });
+
+            entity.HasOne(h => h.Factura)
+                .WithMany(f => f.HistorialEstados)
+                .HasForeignKey(h => h.FacturaId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FacturacionLog>(entity =>
+        {
+            entity.ToTable("FacturacionLog");
+            entity.Property(l => l.CorrelationId).HasMaxLength(100);
+            entity.Property(l => l.EmpresaId).HasMaxLength(50);
+            entity.Property(l => l.SucursalId).HasMaxLength(50);
+            entity.Property(l => l.Origen).HasMaxLength(50);
+            entity.Property(l => l.Ambiente).HasMaxLength(10);
+            entity.Property(l => l.Proveedor).HasMaxLength(50);
+            entity.Property(l => l.Operacion).HasMaxLength(100);
+            entity.Property(l => l.MetodoHttp).HasMaxLength(10);
+            entity.Property(l => l.Ruta).HasMaxLength(255);
+            entity.Property(l => l.EstadoEjecucion).HasMaxLength(50);
+            entity.Property(l => l.Resultado).HasMaxLength(50);
+            entity.Property(l => l.Mensaje).HasMaxLength(1000);
+            entity.Property(l => l.TraceIdentifierProveedor).HasMaxLength(150);
+            entity.Property(l => l.IdentificadorExterno).HasMaxLength(150);
+            entity.Property(l => l.UuidFiscal).HasMaxLength(50);
+            entity.Property(l => l.IdempotencyKey).HasMaxLength(150);
+            entity.Property(l => l.TipoExcepcion).HasMaxLength(200);
+            entity.Property(l => l.VersionAplicacion).HasMaxLength(50);
+
+            entity.HasIndex(l => l.CorrelationId);
+            entity.HasIndex(l => new { l.FacturaId, l.FechaInicioUtc });
+            entity.HasIndex(l => l.IntentoId);
+            entity.HasIndex(l => l.VentaId);
+            entity.HasIndex(l => new { l.Ambiente, l.FechaInicioUtc });
+            entity.HasIndex(l => new { l.Resultado, l.FechaInicioUtc });
+            entity.HasIndex(l => l.TraceIdentifierProveedor);
+            entity.HasIndex(l => l.UuidFiscal);
+            entity.HasIndex(l => l.IdempotencyKey);
+        });
+
         // Precision mapping for money fields (decimal(18,2))
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -241,8 +508,45 @@ public class PosDbContext : DbContext
 
             foreach (var property in properties)
             {
-                property.SetPrecision(18);
-                property.SetScale(2);
+                if (property.DeclaringType.ClrType == typeof(FacturacionFacturaDetalle) &&
+                    (property.Name == nameof(FacturacionFacturaDetalle.Cantidad) ||
+                     property.Name == nameof(FacturacionFacturaDetalle.ValorUnitario) ||
+                     property.Name == nameof(FacturacionFacturaDetalle.BaseIva) ||
+                     property.Name == nameof(FacturacionFacturaDetalle.ImporteIva)))
+                {
+                    property.SetPrecision(18);
+                    property.SetScale(4);
+                }
+                else if (property.DeclaringType.ClrType == typeof(FacturacionFacturaDetalle) &&
+                         property.Name == nameof(FacturacionFacturaDetalle.TasaOcuotaIva))
+                {
+                    property.SetPrecision(18);
+                    property.SetScale(6);
+                }
+                else if (property.DeclaringType.ClrType == typeof(FacturacionFacturaImpuesto) &&
+                         (property.Name == nameof(FacturacionFacturaImpuesto.Base) ||
+                          property.Name == nameof(FacturacionFacturaImpuesto.Importe)))
+                {
+                    property.SetPrecision(18);
+                    property.SetScale(4);
+                }
+                else if (property.DeclaringType.ClrType == typeof(FacturacionFacturaImpuesto) &&
+                         property.Name == nameof(FacturacionFacturaImpuesto.TasaOCuota))
+                {
+                    property.SetPrecision(18);
+                    property.SetScale(6);
+                }
+                else if (property.DeclaringType.ClrType == typeof(FacturacionFactura) &&
+                         property.Name == nameof(FacturacionFactura.TipoCambio))
+                {
+                    property.SetPrecision(18);
+                    property.SetScale(4);
+                }
+                else
+                {
+                    property.SetPrecision(18);
+                    property.SetScale(2);
+                }
             }
         }
     }

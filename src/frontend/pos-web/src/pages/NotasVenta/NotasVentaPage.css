@@ -1,0 +1,506 @@
+/* =========================================================================
+   Módulo de Notas de Venta — WPC Bajío (Estilos Profesionales)
+   ========================================================================= */
+
+.notas-venta-container {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: inherit;
+  color: var(--text-primary, #3A2312);
+}
+
+/* Header del Módulo */
+.notas-venta-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.notas-venta-title-group h2 {
+  font-size: 1.5rem;
+  color: #9C4D22;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notas-venta-subtitle {
+  color: #7A6657;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Tarjetas de Métricas */
+.notas-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.notas-stat-card {
+  background: #FAF8F5;
+  border: 1px solid #F3E9DA;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+}
+
+.notas-stat-icon {
+  font-size: 2rem;
+  background: #FEF7EB;
+  border: 1px solid #F3E9DA;
+  border-radius: 8px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notas-stat-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #7A6657;
+  font-weight: 600;
+}
+
+.notas-stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #3A2312;
+  margin-top: 0.25rem;
+}
+
+/* Barra de Filtros */
+.notas-filters-card {
+  background: #FFFFFF;
+  border: 1px solid #F3E9DA;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.notas-filters-grid {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.1fr 1.1fr auto;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+@media (max-width: 1024px) {
+  .notas-filters-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .notas-filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notas-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.notas-filter-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6F3215;
+}
+
+.notas-filter-input,
+.notas-filter-select {
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #F3E9DA;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #3A2312;
+  background-color: #FAF8F5;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.notas-filter-input:focus,
+.notas-filter-select:focus {
+  border-color: #9C4D22;
+  background-color: #FFFFFF;
+}
+
+.notas-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-primary-wpc {
+  background: #9C4D22;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background 0.2s;
+}
+
+.btn-primary-wpc:hover {
+  background: #833E1A;
+}
+
+.btn-secondary-wpc {
+  background: #FAF8F5;
+  color: #6F3215;
+  border: 1px solid #F3E9DA;
+  border-radius: 6px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s;
+}
+
+.btn-secondary-wpc:hover {
+  background: #FEF7EB;
+  border-color: #9C4D22;
+}
+
+/* Tabla de Ventas */
+.notas-table-card {
+  background: #FFFFFF;
+  border: 1px solid #F3E9DA;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  overflow: hidden;
+}
+
+.notas-table-responsive {
+  overflow-x: auto;
+}
+
+.notas-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.notas-table th {
+  background: #FEF7EB;
+  color: #6F3215;
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+  border-bottom: 2px solid #F3E9DA;
+  white-space: nowrap;
+}
+
+.notas-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #F3E9DA;
+  color: #3A2312;
+  vertical-align: middle;
+}
+
+.notas-table tr:hover {
+  background-color: #FAF8F5;
+}
+
+.folio-cell {
+  font-weight: 700;
+  color: #9C4D22;
+  white-space: nowrap;
+}
+
+.date-cell {
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: #7A6657;
+}
+
+.client-cell {
+  font-weight: 600;
+}
+
+.total-cell {
+  font-weight: 700;
+  color: #3A2312;
+  white-space: nowrap;
+}
+
+/* Badges de Estado de Venta */
+.badge-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.badge-completada {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+  border: 1px solid #A5D6A7;
+}
+
+.badge-cancelada {
+  background-color: #FFEBEE;
+  color: #C62828;
+  border: 1px solid #FFCDD2;
+}
+
+.badge-apartado {
+  background-color: #E3F2FD;
+  color: #1565C0;
+  border: 1px solid #90CAF9;
+}
+
+.badge-pendiente {
+  background-color: #FFF3E0;
+  color: #C25E00;
+  border: 1px solid #FFE0B2;
+}
+
+.badge-devolucion {
+  background-color: #F3E5F5;
+  color: #6A1B9A;
+  border: 1px solid #CE93D8;
+}
+
+.badge-general {
+  background-color: #ECEFF1;
+  color: #455A64;
+  border: 1px solid #CFD8DC;
+}
+
+/* Badges de Entrega */
+.badge-entrega {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-entregado {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+  border: 1px solid #A5D6A7;
+}
+
+.badge-pendiente {
+  background-color: #FFF3E0;
+  color: #C25E00;
+  border: 1px solid #FFE0B2;
+}
+
+/* Acciones en Tabla */
+.notas-actions-cell {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.btn-action-icon {
+  background: #FAF8F5;
+  border: 1px solid #F3E9DA;
+  border-radius: 4px;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #6F3215;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-action-icon:hover {
+  background: #9C4D22;
+  color: #FFFFFF;
+  border-color: #9C4D22;
+}
+
+.btn-action-delivery {
+  background: #FEF7EB;
+  color: #9C4D22;
+  border-color: #9C4D22;
+}
+
+.btn-action-delivery:hover {
+  background: #833E1A;
+  color: #FFFFFF;
+}
+
+/* Paginación */
+.notas-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #FEF7EB;
+  border-top: 1px solid #F3E9DA;
+}
+
+.notas-pagination-info {
+  font-size: 0.8rem;
+  color: #7A6657;
+}
+
+.notas-pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Modales */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.modal-content-pdf {
+  background: #FFFFFF;
+  border-radius: 8px;
+  width: 900px;
+  max-width: 95vw;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  overflow: hidden;
+}
+
+.modal-header-wpc {
+  background: #9C4D22;
+  color: #FFFFFF;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header-wpc h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  font-size: 1.25rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modal-body-pdf {
+  flex: 1;
+  background: #525659;
+  position: relative;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.modal-footer-wpc {
+  background: #FAF8F5;
+  border-top: 1px solid #F3E9DA;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Modal de Confirmación de Entrega */
+.modal-content-dialog {
+  background: #FFFFFF;
+  border-radius: 8px;
+  width: 480px;
+  max-width: 90vw;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  overflow: hidden;
+}
+
+.modal-body-dialog {
+  padding: 1.25rem;
+}
+
+.modal-body-dialog p {
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  color: #3A2312;
+}
+
+.modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem;
+  border: 1px solid #F3E9DA;
+  border-radius: 6px;
+  background: #FAF8F5;
+  font-size: 0.85rem;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+}
+
+.modal-textarea:focus {
+  border-color: #9C4D22;
+  background: #FFFFFF;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #7A6657;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+

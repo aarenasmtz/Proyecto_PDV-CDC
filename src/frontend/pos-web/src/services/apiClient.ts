@@ -94,7 +94,7 @@ class ApiClient {
 
     const baseUrl = getApiBaseUrl();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
       const response = await fetch(`${baseUrl}${endpoint}`, {
@@ -130,7 +130,7 @@ class ApiClient {
     } catch (err: any) {
       clearTimeout(timeoutId);
       if (err.name === 'AbortError') {
-        throw new Error('Tiempo de espera agotado al conectar con el servidor (15s). Verifica la conexión.');
+        throw new Error('Tiempo de espera agotado al conectar con el servidor (30s). Verifica la conexión.');
       }
       throw err;
     }

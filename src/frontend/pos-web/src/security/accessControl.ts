@@ -1,6 +1,7 @@
 export type AppTab =
   | 'pos'
   | 'sales'
+  | 'notas-venta'
   | 'web-orders'
   | 'shift'
   | 'reports'
@@ -14,6 +15,7 @@ export type AppTab =
   | 'inventory'
   | 'inventory-movements'
   | 'purchase-receipts'
+  | 'invoicing'
   | 'customers'
   | 'users'
   | 'audit'
@@ -43,12 +45,19 @@ export const permissionCodes = {
   inventoryMovements: 'inventario:movimientos',
   customersCreate: 'clientes:crear',
   customersEdit: 'clientes:editar',
-  usersAdminister: 'usuarios:administrar'
+  usersAdminister: 'usuarios:administrar',
+  invoicingView: 'facturacion:ver',
+  invoicingIssue: 'facturacion:emitir',
+  invoicingDownload: 'facturacion:descargar',
+  invoicingSendEmail: 'facturacion:enviar_correo',
+  invoicingCancel: 'facturacion:cancelar',
+  invoicingAdminConfig: 'facturacion:configurar'
 } as const;
 
 const tabPermissions: Record<Exclude<AppTab, 'profile'>, readonly string[]> = {
   pos: [permissionCodes.salesProcess],
   sales: [permissionCodes.reportsSalesView],
+  'notas-venta': [permissionCodes.reportsSalesView, permissionCodes.salesProcess],
   'web-orders': [permissionCodes.reportsSalesView, permissionCodes.salesProcess],
   shift: [
     permissionCodes.cashOpen,
@@ -76,6 +85,7 @@ const tabPermissions: Record<Exclude<AppTab, 'profile'>, readonly string[]> = {
   inventory: [permissionCodes.inventoryView],
   'inventory-movements': [permissionCodes.inventoryMovements],
   'purchase-receipts': [permissionCodes.inventoryView, permissionCodes.inventoryMovements],
+  invoicing: [permissionCodes.invoicingView, permissionCodes.invoicingIssue],
   customers: [permissionCodes.customersCreate, permissionCodes.customersEdit],
   users: [permissionCodes.usersAdminister],
   audit: [permissionCodes.usersAdminister]

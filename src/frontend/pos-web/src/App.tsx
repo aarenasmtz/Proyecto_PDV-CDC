@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginPage from './pages/Login/LoginPage';
 import PosPanelPage from './pages/Pos/PosPanelPage';
 import SalesHistoryPage from './pages/Sales/SalesHistoryPage';
+import { NotasVentaPage } from './pages/NotasVenta/NotasVentaPage';
 import WebOrdersPage from './pages/WebOrders/WebOrdersPage';
 import CashShiftPage from './pages/CashShift/CashShiftPage';
 import ReportsDashboardPage from './pages/Reports/ReportsDashboardPage';
@@ -15,6 +16,7 @@ import CustomerListPage from './pages/Customers/CustomerListPage';
 import InventoryListPage from './pages/Inventory/InventoryListPage';
 import InventoryMovementsPage from './pages/Inventory/InventoryMovementsPage';
 import PurchaseReceiptsPage from './pages/Receipts/PurchaseReceiptsPage';
+import FacturacionPage from './pages/Facturacion/FacturacionPage';
 import { PaginaUsuarios } from './pages/Users/PaginaUsuarios';
 import AuditLogPage from './pages/Audit/AuditLogPage';
 import { AppTab, canAccessTab, getDefaultTab } from './security/accessControl';
@@ -89,6 +91,14 @@ const MainLayout: React.FC = () => {
                 onClick={() => setActiveTab('sales')}
               >
                 🧾 {t('navSales')}
+              </button>
+              )}
+              {canOpenTab('notas-venta') && (
+              <button
+                className={`lang-btn ${currentTab === 'notas-venta' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('notas-venta')}
+              >
+                📋 {t('navNotasVenta')}
               </button>
               )}
               {canOpenTab('web-orders') && (
@@ -199,6 +209,14 @@ const MainLayout: React.FC = () => {
                 📦 {t('navPurchaseReceipts')}
               </button>
               )}
+              {canOpenTab('invoicing') && (
+              <button
+                className={`lang-btn ${currentTab === 'invoicing' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('invoicing')}
+              >
+                🧾 {t('navInvoicing')}
+              </button>
+              )}
               {canOpenTab('customers') && (
               <button
                 className={`lang-btn ${currentTab === 'customers' ? 'is-active' : ''}`}
@@ -260,6 +278,7 @@ const MainLayout: React.FC = () => {
           <>
             {currentTab === 'pos' && <PosPanelPage />}
             {currentTab === 'sales' && <SalesHistoryPage />}
+            {currentTab === 'notas-venta' && <NotasVentaPage />}
             {currentTab === 'web-orders' && <WebOrdersPage />}
             {currentTab === 'shift' && <CashShiftPage />}
             {currentTab === 'reports' && <ReportsDashboardPage />}
@@ -273,6 +292,7 @@ const MainLayout: React.FC = () => {
             {currentTab === 'inventory' && <InventoryListPage />}
             {currentTab === 'inventory-movements' && <InventoryMovementsPage />}
             {currentTab === 'purchase-receipts' && <PurchaseReceiptsPage />}
+            {currentTab === 'invoicing' && <FacturacionPage />}
             {currentTab === 'customers' && <CustomerListPage />}
             {currentTab === 'users' && <PaginaUsuarios />}
             {currentTab === 'audit' && <AuditLogPage />}
