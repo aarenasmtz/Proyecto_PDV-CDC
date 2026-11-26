@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.20.0] Corrección de Glifos '?' en PDF de Notas de Venta y Despliegue en Vivo - 2026-11-19
+
+### Corregido / Mejorado
+- **Corrección de Glifos '?' (`????????????1.16 m²?`) en Observaciones Comerciales de Notas de Venta en PDF**:
+  - **Causa Raíz**: Al registrar ventas con la interfaz del PDV en Chino Simplificado (`zh`), el sistema guardaba como nota por defecto el texto en chino `柜台销售。预计覆盖面积：{{coverage}} m²。` (12 caracteres chinos + 1 punto final chino). Al renderizar el documento PDF con QuestPDF y fuente `Arial`, SkiaSharp no encontraba glifos para dichos caracteres CJK en el sistema y los reemplazaba con el carácter sustituto `?`.
+  - **Backend (`NotaVentaApplicationService.cs`)**:
+    - Implementado el método de normalización `NormalizarObservacionesComerciales(string? notas)`.
+    - Mapeo automático de notas en chino a español comercial oficial: `柜台销售。预计覆盖面积：X m²。` -> `Venta de mostrador. Cobertura estimada: X m².`.
+    - Normalización de puntuación china (`。` -> `.`, `：` -> `:`, `，` -> `,`) y conversión de etiquetas internas (`[ESTATUS]`, `[GUIA]`, `[E-COMMERCE]`, `[CANCELADA]`).
+    - Sanitización y filtrado de ideogramas CJK residuales para garantizar cero símbolos `?` en el documento PDF generado.
+  - **Frontend (`PaginaPuntoVenta.tsx` & `i18n/index.ts`)**:
+    - Se garantizó que la nota por defecto guardada en base de datos al realizar ventas en mostrador sea siempre en español comercial (`Venta de mostrador. Cobertura estimada: ${coverage.toFixed(2)} m².`), independientemente del idioma seleccionado por el operador en el selector de la UI.
+    - Actualizado el recurso `defaultSaleNote` en `zh` de `index.ts`.
+  - **Base de Datos de Producción (`PosLambrinDb`)**:
+    - Actualizadas las 6 ventas históricas afectadas (1, 2, 3, 12, 21, 22) en SQL Server del VPS, estandarizando sus notas al formato en español.
+  - **Despliegue y Pruebas**:
+    - 11/11 pruebas unitarias en `NotaVentaTests.cs` y 53/53 pruebas de frontend en Vitest aprobadas al 100%.
+    - Binarios de Release desplegados en servidor VPS Ubuntu (`193.46.198.88`) y frontend actualizado en Cloudflare Workers (`https://pos-wpcbajio.aaronarenasmartinez.workers.dev`).
+    - Pull Request #9 actualizado en GitHub.
+
 ## [2.19.0] Optimización de Rendimiento en Carga de Catálogo PDV - 2026-11-09
 
 ### Optimizado / Rendimiento

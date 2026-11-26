@@ -7,18 +7,19 @@
   - **Frontend SPA**: `https://pos-wpcbajio.aaronarenasmartinez.workers.dev` (Desplegado en Cloudflare Workers).
   - **Base de Datos VPS**: Migrada con `AddFacturacionModuleCompleto` y notas normalizadas en español.
   - **FiscalAPI**: Operando en modo QA (`https://test.fiscalapi.com`).
-- **Control de Versiones**:
+- **Control de Versiones y Contexto**:
   - **Rama Activa**: `feature/facturacion-cfdi-y-notas-de-venta`
   - **Pull Request Activo**: [#9 en GitHub](https://github.com/aarenasmtz/Proyecto_PDV-CDC/pull/9) listo para merge a `main`.
+  - **Contexto Completo**: Documentado en `PROJECT_CONTEXT.md` (arquitectura, 17 módulos, historia de versiones v1.0 a v2.20 y guía para laptop).
 
-## 📌 Siguiente Tarea Recomendada: Validación de Nota de Venta PDF en Producción y Aprobación de PR #9
+## 📌 Siguiente Tarea Recomendada: Validación Final en Producción y Fusión del PR #9 a Main
 
 1. **Validación de la Nota de Venta PDF**:
    - Ingresar a [https://pos-wpcbajio.aaronarenasmartinez.workers.dev](https://pos-wpcbajio.aaronarenasmartinez.workers.dev).
    - Iniciar sesión y entrar al módulo de **Notas de Venta**.
    - Descargar el PDF de la venta folio 22 (o cualquier venta previa) y verificar que en "OBSERVACIONES / CONDICIONES COMERCIALES" se lea claramente `Venta de mostrador. Cobertura estimada: 1.16 m².` sin símbolos `?`.
 2. **Revisión y Aprobación del PR #9**:
-   - Revisar el Pull Request #9 en GitHub e incorporar este commit adicional a la rama del PR.
+   - Aprobar y fusionar (Merge) el Pull Request #9 hacia la rama `main` en GitHub.
 3. **Cambio Futuro de Claves FiscalAPI a Producción (PR)**:
    - Cuando se cuente con las credenciales definitivas de producción de FiscalAPI, actualizar en `/var/www/pos-api/appsettings.json` en el VPS las llaves `ApiKey`, `Tenant` y `ApiUrl: "https://api.fiscalapi.com"`.
 

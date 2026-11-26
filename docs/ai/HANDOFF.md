@@ -1,3 +1,11 @@
+## 📌 Hito Cumplido: Documentación Histórica Integral y Sincronización para Laptop (25 de Noviembre, 2026)
+- **Objetivo**: Estandarizar y compilar en la documentación (`PROJECT_CONTEXT.md`, `CURRENT_STATE.md`, `HANDOFF.md`, `NEXT_TASK.md`, `CHANGELOG.md`) toda la historia de desarrollo del proyecto, arquitectura, los 17 módulos, topología VPS + Cloudflare y reglas de negocio, permitiendo que cualquier desarrollador o agente IA tenga contexto total e inmediato al abrir el repositorio en su laptop.
+- **Acciones Realizadas**:
+  1. `PROJECT_CONTEXT.md` expandido como documento maestro de contexto global (8 secciones exhaustivas con tablas, arquitectura, stack, reglas de negocio, historial de versiones de v1.0 a v2.20 y guía de arranque en laptop).
+  2. `CHANGELOG.md` actualizado con el release `[2.20.0]` que documenta la corrección de glifos `?` en PDFs y despliegue.
+  3. `CURRENT_STATE.md` y `HANDOFF.md` sincronizados y actualizados.
+  4. Cambios comiteados con identidad autorizada y pusheados a la rama del Pull Request #9.
+
 ## 📌 Hito Cumplido: Corrección de Glifos '?' en PDF de Notas de Venta y Despliegue en VPS + Cloudflare (19 de Noviembre, 2026)
 - **Objetivo**: Corregir los símbolos de interrogación `????????????1.16 m²?` que aparecían en el recuadro "OBSERVACIONES / CONDICIONES COMERCIALES" de las Notas de Venta en formato PDF.
 - **Acciones Realizadas**:
@@ -14,8 +22,7 @@
      - Frontend desplegado en Cloudflare Workers (`pos-wpcbajio`).
   6. **Pruebas**: 11/11 pruebas backend en `NotaVentaTests` y 53/53 pruebas frontend en Vitest aprobadas al 100%.
 
-
-- **Objetivo**: Recompilar y desplegar los cambios más recientes para que se reflejen de inmediato en el servidor VPS de producción y en la CDN Edge de Cloudflare.
+## 📌 Hito Cumplido: Despliegue en Vivo a Producción en VPS Cloud y Cloudflare Workers (13 de Noviembre, 2026)
 - **Acciones Realizadas**:
   1. **Backend API en Servidor VPS (`193.46.198.88`)**:
      - Compilado en modo Release (`dotnet publish -c Release`).
